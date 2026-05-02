@@ -1,0 +1,20 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "loginUser": "jobtest@gmail.com",
+  "loginPassword": "12345678",
+  "executionArgs": {
+    "projectName": "nextjd-testsprite",
+    "projectPath": "/Users/jobmac/Documents/nextjd-testsprite",
+    "testIds": [],
+    "additionalInstruction": "",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-8BxTjztt974ZF7EtP0gq6DbxHbUWzg4sY_Sxxbr4TEd7sEFxpw-qJFz99OZJFMwAyfR0mjAxbqKzzNx9DJVxxaCWWvqXJRwm3vf8UjeJlaciHVi4xOa9q7cyXaqqewWDxtE"
+    }
+  },
+  "serverPort": 49184,
+  "proxy": "http://edbb5325-09ec-42e3-ae78-3dc34676cb04:cNvcgoMSUlzxWHIgDPiUVnw5cnrUYpaX@tun.testsprite.com:8080"
+}

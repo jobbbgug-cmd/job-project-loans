@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "TestSprite": {
+      "command": "node",
+      "args": [
+        "/Users/jobmac/.npm/_npx/8ddf6bea01b2519d/node_modules/@testsprite/testsprite-mcp/dist/index.js"
+      ]
+    }
+  }
+}

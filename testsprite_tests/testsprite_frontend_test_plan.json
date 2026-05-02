@@ -1,0 +1,1547 @@
+[
+  {
+    "id": "TC001",
+    "title": "Redirect unauthenticated visitors from root to login",
+    "description": "Verifies that visiting the root route without an authenticated session sends the user to the login page.",
+    "category": "View Todo List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the login page"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Sign in and access todo list",
+    "description": "A returning user can sign in with valid credentials and is redirected to their todo list page.",
+    "category": "User Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /register"
+      },
+      {
+        "type": "action",
+        "description": "Fill Login User into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a unique email address into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a password with at least 8 characters into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "action",
+        "description": "Click the logout control"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill the same email address into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill the same password into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the todos page"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Block unauthenticated access to the todo list page",
+    "description": "Verifies that attempting to access the todo list page without a session redirects the user to the login page.",
+    "category": "View Todo List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /todos"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the login page"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Create account and land on todo list",
+    "description": "A new visitor can register with valid details and is signed in and redirected to their todo list page.",
+    "category": "User Registration",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /register"
+      },
+      {
+        "type": "action",
+        "description": "Fill Test User into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a unique email address into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a password with at least 8 characters into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the todos page"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Add a new todo and place it at the top",
+    "description": "Verifies that submitting a non-empty todo title creates the todo and it appears at the top of the list.",
+    "category": "Add Todo",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the todo list page to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Create a new todo with title Todo A"
+      },
+      {
+        "type": "action",
+        "description": "Create a new todo with title Todo B"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the most recently added todo appears at the top of the list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Save edited todo title via Enter",
+    "description": "Verifies a user can edit a todo title inline and save it so the updated title appears in the list.",
+    "category": "Edit Todo Title",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Todo to edit into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Enter edit mode for the todo title"
+      },
+      {
+        "type": "action",
+        "description": "Fill Updated todo title into the inline title input"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo list displays an item with title Updated todo title"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Display todos after page load for an authenticated user",
+    "description": "Verifies that after logging in, the todo list loads and shows the user's existing todos.",
+    "category": "View Todo List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the todo list page to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Create a new todo with a unique title"
+      },
+      {
+        "type": "action",
+        "description": "Refresh the page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo list displays at least one todo item"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Delete a todo after revealing delete control",
+    "description": "Verifies a user can reveal the delete control for a todo and remove the item from the list.",
+    "category": "Delete Todo",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Todo to delete into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Reveal the delete control for the Todo to delete item by hovering over it"
+      },
+      {
+        "type": "action",
+        "description": "Activate delete for that todo"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo with title Todo to delete is not present in the todo list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Clear completed removes only completed items",
+    "description": "User can clear all completed todos at once and only completed items are removed while active items remain visible.",
+    "category": "Clear Completed Todos",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Fill Todo A into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Todo B into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "action",
+        "description": "Toggle completion for Todo A"
+      },
+      {
+        "type": "action",
+        "description": "Trigger the clear completed action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify completed todo items are not shown in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify at least one active todo item remains visible in the list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "End session and return to login",
+    "description": "An authenticated user can log out and is redirected back to the login page.",
+    "category": "User Logout",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the logout control"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the login page"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Mark a todo as completed",
+    "description": "Verifies that toggling a todo marks it completed and the UI reflects completed state with a strikethrough.",
+    "category": "Toggle Todo Completion",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the todo list page to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Create a new todo with a unique title"
+      },
+      {
+        "type": "action",
+        "description": "Toggle completion for the newly created todo"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo is displayed as completed with strikethrough text"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Save edited todo title via blur",
+    "description": "Verifies a user can edit a todo title inline and save it by clicking away so the updated title remains visible.",
+    "category": "Edit Todo Title",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Blur save todo into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Enter edit mode for the todo title"
+      },
+      {
+        "type": "action",
+        "description": "Fill Blur saved title into the inline title input"
+      },
+      {
+        "type": "action",
+        "description": "Click outside the inline edit input to blur"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo list displays an item with title Blur saved title"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Show empty state when the user has no todos",
+    "description": "Verifies that a newly registered user is taken to the todo list and sees an empty state when no todos exist.",
+    "category": "View Todo List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /register"
+      },
+      {
+        "type": "action",
+        "description": "Fill a new name into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a new unique email into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a valid password (8+ characters) into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the todo list page to finish loading"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC014",
+    "title": "Clear completed works with multiple completed todos",
+    "description": "User can clear multiple completed todos in one action and they are all removed from the list.",
+    "category": "Clear Completed Todos",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Fill Completed One into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Completed Two into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "action",
+        "description": "Toggle completion for Completed One"
+      },
+      {
+        "type": "action",
+        "description": "Toggle completion for Completed Two"
+      },
+      {
+        "type": "action",
+        "description": "Trigger the clear completed action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify completed todo items are not shown in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo list is empty or contains only active items"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC015",
+    "title": "View all todos under All filter",
+    "description": "Verifies selecting the All filter shows both active and completed todos together.",
+    "category": "Filter Todos",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Active item into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Completed item into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Toggle the Completed item todo to completed"
+      },
+      {
+        "type": "action",
+        "description": "Select the All filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify both active and completed todos are displayed in the list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC016",
+    "title": "View only incomplete todos under Active filter",
+    "description": "Verifies selecting the Active filter shows only incomplete todos and hides completed ones.",
+    "category": "Filter Todos",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Active only item into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Will be completed into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Toggle the Will be completed todo to completed"
+      },
+      {
+        "type": "action",
+        "description": "Select the Active filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only incomplete todos are displayed in the list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC017",
+    "title": "Uncomplete a completed todo",
+    "description": "Verifies that toggling a completed todo makes it active again and removes the completed visual styling.",
+    "category": "Toggle Todo Completion",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the todo list page to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Create a new todo with a unique title"
+      },
+      {
+        "type": "action",
+        "description": "Toggle completion for the newly created todo to mark it completed"
+      },
+      {
+        "type": "action",
+        "description": "Toggle completion for the same todo again to mark it active"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo is displayed as active without strikethrough text"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC018",
+    "title": "Clear completed does not remove active todos even when many exist",
+    "description": "User clearing completed items does not affect active todos even when the list contains several active items.",
+    "category": "Clear Completed Todos",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Fill Active 1 into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Active 2 into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill To Complete into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "action",
+        "description": "Toggle completion for To Complete"
+      },
+      {
+        "type": "action",
+        "description": "Trigger the clear completed action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify at least two active todo items are visible in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify completed todo items are not shown in the list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC019",
+    "title": "Delete one todo without affecting others",
+    "description": "Verifies deleting a single todo removes only that item while other todos remain visible.",
+    "category": "Delete Todo",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Keep me into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Remove me into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Reveal the delete control for the Remove me item by hovering over it"
+      },
+      {
+        "type": "action",
+        "description": "Activate delete for that todo"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo list displays an item with title Keep me"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo with title Remove me is not present in the todo list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC020",
+    "title": "Clear completed control appears after completing a todo",
+    "description": "User sees the clear completed control appear once at least one todo is marked completed.",
+    "category": "Clear Completed Todos",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Fill Will Complete into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "action",
+        "description": "Toggle completion for Will Complete"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the clear completed control is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC021",
+    "title": "View only completed todos and see active count badge",
+    "description": "Verifies selecting the Completed filter shows only completed todos and the Active tab shows the remaining active count badge.",
+    "category": "Filter Todos",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill One active item into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill One completed item into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Toggle the One completed item todo to completed"
+      },
+      {
+        "type": "action",
+        "description": "Select the Completed filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only completed todos are displayed in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the Active filter shows a badge with count 1"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC022",
+    "title": "Cancel edited todo title via Escape",
+    "description": "Verifies a user can cancel an inline title edit and the original title remains unchanged.",
+    "category": "Edit Todo Title",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click to add a new todo"
+      },
+      {
+        "type": "action",
+        "description": "Fill Original title into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Enter edit mode for the todo title"
+      },
+      {
+        "type": "action",
+        "description": "Fill Attempted new title into the inline title input"
+      },
+      {
+        "type": "action",
+        "description": "Press Escape"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the todo list displays an item with title Original title"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC023",
+    "title": "Clear completed control is hidden when no completed todos exist",
+    "description": "User does not see the clear completed control when there are no completed todos.",
+    "category": "Clear Completed Todos",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Fill Only Active into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the clear completed control is not visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC024",
+    "title": "Clear completed is unavailable after clearing all completed items",
+    "description": "After clearing, the user no longer has access to the clear completed control because there are no completed todos left.",
+    "category": "Clear Completed Todos",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Fill Done 1 into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo"
+      },
+      {
+        "type": "action",
+        "description": "Toggle completion for Done 1"
+      },
+      {
+        "type": "action",
+        "description": "Trigger the clear completed action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the clear completed control is not visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "Reject duplicate email during registration",
+    "description": "A visitor cannot register with an email that is already in use and sees a duplicate-email error.",
+    "category": "User Registration",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /register"
+      },
+      {
+        "type": "action",
+        "description": "Fill First User into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a unique email address into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a password with at least 8 characters into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "action",
+        "description": "Click the logout control"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /register"
+      },
+      {
+        "type": "action",
+        "description": "Fill Second User into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill the same email address into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a password with at least 8 characters into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a duplicate email error is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC026",
+    "title": "Show error on invalid login credentials",
+    "description": "A visitor who enters invalid credentials cannot sign in and sees an invalid-credentials error.",
+    "category": "User Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill invalid@example.com into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill wrongpassword into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an invalid credentials error is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC027",
+    "title": "Prevent creating a todo with an empty title",
+    "description": "Verifies that submitting an empty todo title is blocked and no new todo is added.",
+    "category": "Add Todo",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the todo list page to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Count the number of todos currently displayed"
+      },
+      {
+        "type": "action",
+        "description": "Fill an empty value into the new todo title field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new todo form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the number of todos displayed does not increase"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC028",
+    "title": "Enforce minimum password length on registration",
+    "description": "A visitor cannot register with a password shorter than the minimum length and sees a validation error.",
+    "category": "User Registration",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /register"
+      },
+      {
+        "type": "action",
+        "description": "Fill Test User into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a unique email address into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a password shorter than 8 characters into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a password length validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC029",
+    "title": "Loan admin can log in and reach dashboard",
+    "description": "Admin user logs in at /loan/login with valid credentials and is redirected to /loan/dashboard showing stats cards.",
+    "category": "Loan Auth",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login" },
+      { "type": "action", "description": "Fill admin@loanapp.com into the email field" },
+      { "type": "action", "description": "Fill Admin@1234 into the password field" },
+      { "type": "action", "description": "Submit the login form" },
+      { "type": "assertion", "description": "Verify the user lands on /loan/dashboard" },
+      { "type": "assertion", "description": "Verify at least one stat card is visible on the dashboard" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC030",
+    "title": "Unauthenticated access to loan dashboard redirects to login",
+    "description": "Verifies that visiting /loan/dashboard without a session redirects to /loan/login.",
+    "category": "Loan Auth",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/dashboard without being logged in" },
+      { "type": "assertion", "description": "Verify the user lands on /loan/login" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC031",
+    "title": "Admin can create a new loan",
+    "description": "Admin selects a customer, fills in principal, rate, term, and submits the new loan form, landing on the loan detail page.",
+    "category": "Loan Creation",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/loans/new" },
+      { "type": "action", "description": "Select a customer from the Customer dropdown" },
+      { "type": "action", "description": "Fill 100000 into the Principal field" },
+      { "type": "action", "description": "Fill 5 into the Annual Interest Rate field" },
+      { "type": "action", "description": "Select 12 months from the Term dropdown" },
+      { "type": "action", "description": "Fill Home renovation into the Purpose field" },
+      { "type": "action", "description": "Submit the form" },
+      { "type": "assertion", "description": "Verify the user lands on the loan detail page showing the loan number" },
+      { "type": "assertion", "description": "Verify the loan status is pending" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC032",
+    "title": "Loan list shows all loans and can filter by status",
+    "description": "Admin visits /loan/loans and verifies loans are listed; clicking 'pending' filter shows only pending loans.",
+    "category": "Loan List",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/loans" },
+      { "type": "assertion", "description": "Verify at least one row is visible in the loans table" },
+      { "type": "action", "description": "Click the pending filter button" },
+      { "type": "assertion", "description": "Verify all visible rows show the pending status badge" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC033",
+    "title": "Admin can approve a pending loan",
+    "description": "From the loan detail page, admin clicks Approve on a pending loan and the status changes to active.",
+    "category": "Loan Approval",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/loans and click View on a pending loan" },
+      { "type": "action", "description": "Click the Approve button" },
+      { "type": "assertion", "description": "Verify the loan status badge changes to active" },
+      { "type": "assertion", "description": "Verify the Approve and Reject buttons are no longer visible" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC034",
+    "title": "Admin can reject a pending loan",
+    "description": "From the loan detail page, admin clicks Reject on a pending loan and the status changes to rejected.",
+    "category": "Loan Approval",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/loans and click View on a pending loan" },
+      { "type": "action", "description": "Click the Reject button" },
+      { "type": "assertion", "description": "Verify the loan status badge changes to rejected" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC035",
+    "title": "Customer can record a payment with a slip",
+    "description": "A logged-in customer navigates to /loan/payments/new, selects an active loan, enters an amount, uploads a slip image, and submits.",
+    "category": "Payment",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/payments/new" },
+      { "type": "action", "description": "Select an active loan from the Loan dropdown" },
+      { "type": "action", "description": "Verify the Amount field is pre-filled with the monthly payment" },
+      { "type": "action", "description": "Upload a sample image file as the payment slip" },
+      { "type": "action", "description": "Submit the payment form" },
+      { "type": "assertion", "description": "Verify the user lands on the payment detail page" },
+      { "type": "assertion", "description": "Verify the payment status is pending" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC036",
+    "title": "Admin can approve a pending payment",
+    "description": "Admin views a pending payment detail page, clicks Approve Payment, and the status changes to approved.",
+    "category": "Payment Verification",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/payments and click View on a pending payment" },
+      { "type": "action", "description": "Click the Approve Payment button" },
+      { "type": "assertion", "description": "Verify the payment status badge changes to approved" },
+      { "type": "assertion", "description": "Verify the Approve and Reject buttons are no longer visible" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC037",
+    "title": "Admin can reject a payment with a reason",
+    "description": "Admin views a pending payment, clicks Reject Payment, enters a reason, confirms, and the status changes to rejected.",
+    "category": "Payment Verification",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/payments and click View on a pending payment" },
+      { "type": "action", "description": "Click the Reject Payment button" },
+      { "type": "action", "description": "Fill Insufficient slip evidence into the reason textarea" },
+      { "type": "action", "description": "Click Confirm Reject" },
+      { "type": "assertion", "description": "Verify the payment status badge changes to rejected" },
+      { "type": "assertion", "description": "Verify the reject reason text is displayed on the page" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC038",
+    "title": "Admin can create a new customer user",
+    "description": "Admin fills the new user form at /loan/users/new with role=customer and the user appears in the customers list.",
+    "category": "User Management",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/users/new" },
+      { "type": "action", "description": "Fill Test Customer into the Full Name field" },
+      { "type": "action", "description": "Fill a unique email into the Email field" },
+      { "type": "action", "description": "Fill Password@123 into the Password field" },
+      { "type": "action", "description": "Select customer from the Role dropdown" },
+      { "type": "action", "description": "Submit the form" },
+      { "type": "assertion", "description": "Verify the user is redirected to /loan/customers" },
+      { "type": "assertion", "description": "Verify the new customer name appears in the customer list" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC039",
+    "title": "Customer role cannot see Users nav item",
+    "description": "A user with the customer role should not see the Users navigation link in the sidebar.",
+    "category": "Loan RBAC",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as a customer account" },
+      { "type": "assertion", "description": "Verify the Users nav item is not visible in the sidebar" },
+      { "type": "assertion", "description": "Verify the Customers nav item is not visible in the sidebar" }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC040",
+    "title": "Dashboard charts render after login",
+    "description": "Admin logs in and the dashboard shows both the Monthly Collections bar chart and Loan Status pie chart.",
+    "category": "Loan Dashboard",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/dashboard" },
+      { "type": "assertion", "description": "Verify the Monthly Collections chart heading is visible" },
+      { "type": "assertion", "description": "Verify the Loan Status Distribution chart heading is visible" }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC041",
+    "title": "Loan detail shows amortization schedule",
+    "description": "Viewing a loan detail page shows the amortization schedule table with installment rows.",
+    "category": "Loan Detail",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/loans and click View on an active loan" },
+      { "type": "assertion", "description": "Verify the Amortization Schedule section heading is visible" },
+      { "type": "assertion", "description": "Verify at least one row is visible in the schedule table" }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC042",
+    "title": "Loan admin can log out and is returned to login",
+    "description": "An authenticated loan admin clicks Logout in the sidebar and is redirected back to /loan/login.",
+    "category": "Loan Auth",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Click the Logout button in the sidebar" },
+      { "type": "assertion", "description": "Verify the user lands on /loan/login" }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC043",
+    "title": "New loan form shows estimated monthly payment preview",
+    "description": "When principal, rate, and term are filled in on the new loan form, a live monthly payment estimate is displayed.",
+    "category": "Loan Creation",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/loans/new" },
+      { "type": "action", "description": "Fill 120000 into the Principal field" },
+      { "type": "action", "description": "Fill 6 into the Annual Interest Rate field" },
+      { "type": "action", "description": "Select 24 months from the Term dropdown" },
+      { "type": "assertion", "description": "Verify an Estimated Monthly Payment section is visible showing a non-zero value" }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC044",
+    "title": "Payments list can be filtered by approved status",
+    "description": "Admin navigates to /loan/payments, clicks the approved filter, and only approved payments are visible.",
+    "category": "Payment",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/payments" },
+      { "type": "action", "description": "Click the approved filter button" },
+      { "type": "assertion", "description": "Verify all visible payment rows show the approved status badge" }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC045",
+    "title": "Invalid loan login shows error message",
+    "description": "Submitting wrong credentials on /loan/login displays an error and does not redirect.",
+    "category": "Loan Auth",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login" },
+      { "type": "action", "description": "Fill wrong@email.com into the email field" },
+      { "type": "action", "description": "Fill badpassword into the password field" },
+      { "type": "action", "description": "Submit the login form" },
+      { "type": "assertion", "description": "Verify an error message is visible on the page" },
+      { "type": "assertion", "description": "Verify the URL remains /loan/login" }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC046",
+    "title": "Admin can deactivate a user",
+    "description": "Admin visits /loan/users and clicks Deactivate on an active user; the status badge changes to Inactive.",
+    "category": "User Management",
+    "steps": [
+      { "type": "action", "description": "Navigate to /loan/login and log in as admin@loanapp.com / Admin@1234" },
+      { "type": "action", "description": "Navigate to /loan/users" },
+      { "type": "action", "description": "Find an Active user row and click Deactivate" },
+      { "type": "assertion", "description": "Verify the user's status badge changes to Inactive" }
+    ],
+    "priority": "Low"
+  }
+]
