@@ -130,7 +130,7 @@ export default function DashboardPage() {
                     <Cell key={i} fill="url(#barGradient)" />
                   ))}
                   <LabelList dataKey="amount" position="top"
-                    formatter={(v: number) => v === 0 ? '' : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
+                    formatter={(v: unknown) => { const n = Number(v); return n === 0 ? '' : n >= 1000 ? `${(n / 1000).toFixed(0)}k` : String(n); }}
                     style={{ fill: '#94a3b8', fontSize: 10, fontWeight: 500 }} />
                 </Bar>
                 <defs>
