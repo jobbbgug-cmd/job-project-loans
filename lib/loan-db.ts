@@ -1,25 +1,38 @@
-import mysql from 'mysql2/promise';
+import { MongoClient, Db } from 'mongodb';
 
 declare global {
-  var _loanMysqlPool: mysql.Pool | undefined;
+  var _loanMongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-const loanPool =
-  global._loanMysqlPool ??
-  mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT) || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.LOAN_DB_NAME || 'loan_app',
-    socketPath: process.env.DB_SOCKET,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-  });
+const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
+
+let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV !== 'production') {
-  global._loanMysqlPool = loanPool;
+  if (!global._loanMongoClientPromise) {
+    global._loanMongoClientPromise = new MongoClient(uri).connect();
+  }
+  clientPromise = global._loanMongoClientPromise;
+} else {
+  clientPromise = new MongoClient(uri).connect();
 }
 
-export default loanPool;
+export async function getDb(): Promise<Db> {
+  const client = await clientPromise;
+  return client.db(process.env.MONGODB_DB || 'loan_app');
+}
+
+export async function nextId(col: string): Promise<number> {
+  const db = await getDb();
+  const res = await db
+    .collection<{ _id: string; seq: number }>('counters')
+    .findOneAndUpdate(
+      { _id: col },
+      { $inc: { seq: 1 } },
+      { upsert: true, returnDocument: 'after' }
+    );
+  return res!.seq;
+}
+
+export { clientPromise };
+export default clientPromise;

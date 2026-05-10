@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/loan-db';
+import { getDb } from '@/lib/loan-db';
 import { getAuthUser } from '@/lib/loan-auth';
 import { audit } from '@/lib/loan-helpers';
 
@@ -10,16 +10,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (user.role === 'customer' && String(user.userId) !== id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const conn = await pool.getConnection();
-  try {
-    const [rows] = await conn.execute(
-      `SELECT u.id, u.name, u.email, u.phone, u.address, u.id_number, u.is_active, u.created_at, r.name AS role
-       FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?`, [id]
-    );
-    const items = rows as unknown[];
-    if (items.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json(items[0]);
-  } finally { conn.release(); }
+  const db = await getDb();
+  const [found] = await db.collection('users').aggregate([
+    { $match: { id: Number(id) } },
+    { $lookup: { from: 'roles', localField: 'role_id', foreignField: 'id', as: 'roleDoc' } },
+    { $addFields: { role: { $ifNull: [{ $arrayElemAt: ['$roleDoc.name', 0] }, '$role'] } } },
+    { $project: { password_hash: 0, _id: 0, roleDoc: 0 } },
+  ]).toArray();
+  if (!found) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json(found);
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -29,30 +28,38 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (user.role === 'customer' && String(user.userId) !== id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await request.json();
-  const allowed = ['name', 'phone', 'address', 'id_number', 'is_active'];
-  const sets: string[] = [];
-  const values: (string | number)[] = [];
-  for (const key of allowed) {
-    if (body[key] !== undefined) { sets.push(`${key} = ?`); values.push(body[key]); }
+  const sets: Record<string, unknown> = {};
+
+  const basicFields = ['name', 'phone', 'address', 'id_number', 'is_active'];
+  for (const key of basicFields) {
+    if (body[key] !== undefined) sets[key] = body[key];
   }
-  if (sets.length === 0) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
-  values.push(id);
-  const conn = await pool.getConnection();
-  try {
-    await conn.execute(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, values);
-    await audit(user.userId, 'UPDATE_USER', 'user', Number(id), body);
-    return NextResponse.json({ success: true });
-  } finally { conn.release(); }
+
+  // email และ role แก้ได้เฉพาะ admin
+  if (user.role === 'admin') {
+    if (body.email !== undefined) sets.email = body.email;
+    if (body.role !== undefined) {
+      const db2 = await getDb();
+      const roleDoc = await db2.collection('roles').findOne({ name: body.role });
+      if (!roleDoc) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+      sets.role_id = roleDoc.id;
+    }
+  }
+
+  if (Object.keys(sets).length === 0) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+
+  const db = await getDb();
+  await db.collection('users').updateOne({ id: Number(id) }, { $set: sets });
+  await audit(user.userId, 'UPDATE_USER', 'user', Number(id), body);
+  return NextResponse.json({ success: true });
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(request);
   if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await params;
-  const conn = await pool.getConnection();
-  try {
-    await conn.execute('UPDATE users SET is_active = 0 WHERE id = ?', [id]);
-    await audit(user.userId, 'DEACTIVATE_USER', 'user', Number(id), {});
-    return NextResponse.json({ success: true });
-  } finally { conn.release(); }
+  const db = await getDb();
+  await db.collection('users').updateOne({ id: Number(id) }, { $set: { is_active: false } });
+  await audit(user.userId, 'DEACTIVATE_USER', 'user', Number(id), {});
+  return NextResponse.json({ success: true });
 }

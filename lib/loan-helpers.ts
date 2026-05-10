@@ -1,5 +1,4 @@
-import pool from './loan-db';
-import type { PoolConnection } from 'mysql2/promise';
+import { getDb, nextId } from './loan-db';
 
 // ─── Loan calculation ────────────────────────────────────────────────────────
 
@@ -33,17 +32,10 @@ export function buildSchedule(
   for (let i = 1; i <= termMonths; i++) {
     const interest = Math.round(balance * r * 100) / 100;
     let principalComp = Math.round((monthlyPayment - interest) * 100) / 100;
-
-    // Final instalment: clear remaining balance
-    if (i === termMonths) {
-      principalComp = Math.round(balance * 100) / 100;
-    }
-
+    if (i === termMonths) principalComp = Math.round(balance * 100) / 100;
     balance = Math.max(0, Math.round((balance - principalComp) * 100) / 100);
-
     const dueDate = new Date(startDate);
     dueDate.setMonth(dueDate.getMonth() + i);
-
     rows.push({
       installment_no: i,
       due_date: dueDate.toISOString().split('T')[0],
@@ -53,20 +45,35 @@ export function buildSchedule(
       outstanding_balance: balance,
     });
   }
-
   return rows;
 }
 
-// ─── Loan number generator ───────────────────────────────────────────────────
+// ─── Number generators (use counters collection) ─────────────────────────────
 
-export async function generateLoanNumber(conn: PoolConnection): Promise<string> {
+export async function generateLoanNumber(): Promise<string> {
   const year = new Date().getFullYear();
-  const [rows] = await conn.execute(
-    'SELECT COUNT(*) AS cnt FROM loans WHERE YEAR(created_at) = ?',
-    [year]
-  );
-  const count = ((rows as { cnt: number }[])[0].cnt ?? 0) + 1;
-  return `LN-${year}-${String(count).padStart(5, '0')}`;
+  const db = await getDb();
+  const res = await db
+    .collection<{ _id: string; seq: number }>('counters')
+    .findOneAndUpdate(
+      { _id: `loan_num_${year}` },
+      { $inc: { seq: 1 } },
+      { upsert: true, returnDocument: 'after' }
+    );
+  return `LN-${year}-${String(res!.seq).padStart(5, '0')}`;
+}
+
+export async function generatePaymentNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const db = await getDb();
+  const res = await db
+    .collection<{ _id: string; seq: number }>('counters')
+    .findOneAndUpdate(
+      { _id: `pay_num_${year}` },
+      { $inc: { seq: 1 } },
+      { upsert: true, returnDocument: 'after' }
+    );
+  return `PAY-${year}-${String(res!.seq).padStart(5, '0')}`;
 }
 
 // ─── Audit logger ────────────────────────────────────────────────────────────
@@ -79,17 +86,20 @@ export async function audit(
   details: object,
   ip?: string
 ): Promise<void> {
-  const conn = await pool.getConnection();
   try {
-    await conn.execute(
-      'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, action, entityType, entityId, JSON.stringify(details), ip ?? null]
-    );
-  } finally {
-    conn.release();
+    const db = await getDb();
+    const id = await nextId('audit_logs');
+    await db.collection('audit_logs').insertOne({
+      id,
+      user_id: userId,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      details,
+      ip_address: ip ?? null,
+      created_at: new Date().toISOString(),
+    });
+  } catch {
+    // Audit failures must not break the main flow
   }
 }
-
-// ─── DB helpers ──────────────────────────────────────────────────────────────
-
-export { pool };

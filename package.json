@@ -1,5 +1,5 @@
 {
-  "name": "nextjd-testsprite",
+  "name": "money-project",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,11 +9,15 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
     "jose": "^6.2.3",
+    "mongodb": "^7.2.0",
     "mysql2": "^3.22.3",
     "next": "15.5.9",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-is": "^19.2.5",
     "recharts": "^3.8.1"
   },
   "devDependencies": {

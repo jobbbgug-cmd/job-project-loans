@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { LangProvider, LangToggle, useLang } from '@/contexts/LangContext';
 
-export default function LoanLoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { t } = useLang();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,22 +24,26 @@ export default function LoanLoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Login failed'); return; }
+      if (!res.ok) { setError(data.error || t.login.loginFailed); return; }
       router.push('/loan/dashboard');
     } finally { setLoading(false); }
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 relative">
+      {/* Lang toggle — fixed top-right */}
+      <div className="absolute top-4 right-4">
+        <LangToggle />
+      </div>
 
+      <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-24 h-24 rounded-2xl overflow-hidden mb-3">
-            <Image src="/logo.png" alt="My Money Master" width={96} height={96} className="object-cover w-full h-full" />
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-[300px] max-w-[80vw] overflow-hidden mb-2 mx-auto">
+            <Image src="/logo.png" alt="My Money Master" width={300} height={300} className="object-cover w-full h-full"
+              style={{ transform: 'scale(1.4)', transformOrigin: '50% 43%' }} />
           </div>
-          <h1 className="text-2xl font-bold text-white">My Money Master</h1>
-          <p className="text-slate-400 text-sm mt-1">Loan Management System</p>
+          <p className="text-slate-400 text-sm">My Money Master</p>
         </div>
 
         {/* Form */}
@@ -45,34 +51,39 @@ export default function LoanLoginPage() {
           {error && (
             <div className="bg-red-900/40 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3">{error}</div>
           )}
-
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">{t.login.email}</label>
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)} required
               placeholder="admin@loanapp.com"
-              className="w-full rounded-lg bg-slate-700 border border-slate-600 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full rounded-lg bg-slate-700 border border-slate-600 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">{t.login.password}</label>
             <input
               type="password" value={password} onChange={e => setPassword(e.target.value)} required
               placeholder="••••••••"
-              className="w-full rounded-lg bg-slate-700 border border-slate-600 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full rounded-lg bg-slate-700 border border-slate-600 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
           </div>
-
           <button
             type="submit" disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
-            {loading ? 'Signing in…' : 'Sign in'}
+            className="w-full bg-yellow-600 hover:bg-yellow-500 text-white py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+            {loading ? t.login.signingIn : t.login.signIn}
           </button>
         </form>
 
-        <p className="text-center text-xs text-slate-500 mt-4">Default: admin@loanapp.com / Admin@1234</p>
+        <p className="text-center text-xs text-slate-500 mt-4">{t.login.defaultCreds}</p>
       </div>
     </div>
+  );
+}
+
+export default function LoanLoginPage() {
+  return (
+    <LangProvider>
+      <LoginForm />
+    </LangProvider>
   );
 }

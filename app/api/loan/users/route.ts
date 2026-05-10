@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/loan-db';
+import { getDb, nextId } from '@/lib/loan-db';
 import { getAuthUser, hashPassword } from '@/lib/loan-auth';
 import { audit } from '@/lib/loan-helpers';
 
@@ -10,16 +10,18 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const role = searchParams.get('role');
-  const conn = await pool.getConnection();
-  try {
-    let sql = `SELECT u.id, u.name, u.email, u.phone, u.id_number, u.is_active, u.created_at, r.name AS role
-               FROM users u JOIN roles r ON u.role_id = r.id`;
-    const params: (string | number)[] = [];
-    if (role) { sql += ' WHERE r.name = ?'; params.push(role); }
-    sql += ' ORDER BY u.created_at DESC';
-    const [rows] = await conn.execute(sql, params);
-    return NextResponse.json(rows);
-  } finally { conn.release(); }
+
+  const db = await getDb();
+  const pipeline: object[] = [
+    { $lookup: { from: 'roles', localField: 'role_id', foreignField: 'id', as: 'roleDoc' } },
+    { $addFields: { role: { $ifNull: [{ $arrayElemAt: ['$roleDoc.name', 0] }, '$role'] } } },
+    ...(role ? [{ $match: { role } }] : []),
+    { $project: { password_hash: 0, _id: 0, roleDoc: 0 } },
+    { $sort: { created_at: -1 } },
+  ];
+
+  const users = await db.collection('users').aggregate(pipeline).toArray();
+  return NextResponse.json(users);
 }
 
 export async function POST(request: NextRequest) {
@@ -30,24 +32,27 @@ export async function POST(request: NextRequest) {
   if (!name?.trim() || !email?.trim() || !password || !role) {
     return NextResponse.json({ error: 'name, email, password and role are required' }, { status: 400 });
   }
+  if (!['admin', 'staff', 'customer'].includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
   if (password.length < 8) return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
 
-  const conn = await pool.getConnection();
-  try {
-    const [exists] = await conn.execute('SELECT id FROM users WHERE email = ?', [email.trim()]);
-    if ((exists as unknown[]).length > 0) return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
+  const db = await getDb();
+  const existing = await db.collection('users').findOne({ email: email.trim() });
+  if (existing) return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
 
-    const [roleRow] = await conn.execute('SELECT id FROM roles WHERE name = ?', [role]);
-    if ((roleRow as unknown[]).length === 0) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
-    const roleId = (roleRow as { id: number }[])[0].id;
-
-    const hash = await hashPassword(password);
-    const [result] = await conn.execute(
-      'INSERT INTO users (role_id, name, email, password_hash, phone, address, id_number) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [roleId, name.trim(), email.trim(), hash, phone ?? null, address ?? null, id_number ?? null]
-    );
-    const newId = (result as { insertId: number }).insertId;
-    await audit(user.userId, 'CREATE_USER', 'user', newId, { email: email.trim(), role });
-    return NextResponse.json({ id: newId, email: email.trim(), name: name.trim(), role }, { status: 201 });
-  } finally { conn.release(); }
+  const id = await nextId('users');
+  const hash = await hashPassword(password);
+  await db.collection('users').insertOne({
+    id,
+    role,
+    name: name.trim(),
+    email: email.trim(),
+    password_hash: hash,
+    phone: phone ?? null,
+    address: address ?? null,
+    id_number: id_number ?? null,
+    is_active: true,
+    created_at: new Date().toISOString(),
+  });
+  await audit(user.userId, 'CREATE_USER', 'user', id, { email: email.trim(), role });
+  return NextResponse.json({ id, email: email.trim(), name: name.trim(), role }, { status: 201 });
 }

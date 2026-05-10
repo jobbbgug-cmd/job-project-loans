@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/loan-db';
+import { getDb, nextId } from '@/lib/loan-db';
 import { getAuthUser } from '@/lib/loan-auth';
 import { calcMonthlyPayment, buildSchedule, generateLoanNumber, audit } from '@/lib/loan-helpers';
 
@@ -9,76 +9,166 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
-  const conn = await pool.getConnection();
-  try {
-    let sql = `SELECT l.*, u.name AS customer_name, u.email AS customer_email,
-               s.name AS staff_name,
-               (SELECT COALESCE(SUM(p.amount),0) FROM payments p WHERE p.loan_id = l.id AND p.status = 'approved') AS paid_amount
-               FROM loans l
-               JOIN users u ON l.customer_id = u.id
-               LEFT JOIN users s ON l.staff_id = s.id`;
-    const params: (string | number)[] = [];
-    const conditions: string[] = [];
-    if (user.role === 'customer') { conditions.push('l.customer_id = ?'); params.push(user.userId); }
-    if (status) { conditions.push('l.status = ?'); params.push(status); }
-    if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
-    sql += ' ORDER BY l.created_at DESC';
-    const [rows] = await conn.execute(sql, params);
-    return NextResponse.json(rows);
-  } finally { conn.release(); }
+
+  const db = await getDb();
+  const matchStage: Record<string, unknown> = {};
+  if (user.role === 'customer') matchStage.customer_id = user.userId;
+  if (status) matchStage.status = status;
+
+  const pipeline: object[] = [
+    ...(Object.keys(matchStage).length ? [{ $match: matchStage }] : []),
+    { $lookup: { from: 'users', localField: 'customer_id', foreignField: 'id', as: 'customer' } },
+    { $unwind: '$customer' },
+    { $lookup: { from: 'users', localField: 'staff_id', foreignField: 'id', as: 'staff' } },
+    { $unwind: { path: '$staff', preserveNullAndEmptyArrays: true } },
+    { $lookup: {
+      from: 'payments',
+      let: { loanId: '$id' },
+      pipeline: [
+        { $match: { $expr: { $and: [{ $eq: ['$loan_id', '$$loanId'] }, { $eq: ['$status', 'approved'] }] } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ],
+      as: 'paid_agg',
+    } },
+    { $addFields: {
+      customer_name: '$customer.name',
+      customer_email: '$customer.email',
+      staff_name: '$staff.name',
+      paid_amount: { $ifNull: [{ $arrayElemAt: ['$paid_agg.total', 0] }, 0] },
+    } },
+    { $project: { _id: 0, customer: 0, staff: 0, paid_agg: 0 } },
+    { $sort: { created_at: -1 } },
+  ];
+
+  const loans = await db.collection('loans').aggregate(pipeline).toArray();
+  return NextResponse.json(loans);
 }
 
 export async function POST(request: NextRequest) {
+  try {
   const user = await getAuthUser(request);
   if (!user || !['admin', 'staff'].includes(user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const { customer_id, principal, interest_rate, term_months, start_date, purpose, notes } = await request.json();
-  if (!customer_id || !principal || !interest_rate || !term_months) {
+
+  const formData = await request.formData();
+  const customer_id     = formData.get('customer_id') as string;
+  const principal       = formData.get('principal') as string;
+  const interest_rate   = formData.get('interest_rate') as string;
+  const term_months     = formData.get('term_months') as string;
+  const start_date      = formData.get('start_date') as string | null;
+  const purpose         = formData.get('purpose') as string | null;
+  const notes           = formData.get('notes') as string | null;
+  const slip            = formData.get('slip') as File | null;
+  const customScheduleStr = formData.get('custom_schedule') as string | null;
+
+  if (!customer_id || !principal || !interest_rate || term_months === null) {
     return NextResponse.json({ error: 'customer_id, principal, interest_rate and term_months are required' }, { status: 400 });
   }
-  if (principal <= 0 || interest_rate < 0 || term_months <= 0) {
+  if (Number(principal) <= 0 || Number(interest_rate) < 0 || Number(term_months) < 0) {
     return NextResponse.json({ error: 'Invalid loan parameters' }, { status: 400 });
   }
 
-  const monthlyPayment = calcMonthlyPayment(Number(principal), Number(interest_rate), Number(term_months));
-  const totalPayment = Math.round(monthlyPayment * term_months * 100) / 100;
-  const totalInterest = Math.round((totalPayment - Number(principal)) * 100) / 100;
+  const isOpenEnded = Number(term_months) === 0;
 
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
-    const loanNumber = await generateLoanNumber(conn);
-    const loanStart = start_date ? new Date(start_date) : new Date();
-    const loanEnd = new Date(loanStart);
-    loanEnd.setMonth(loanEnd.getMonth() + Number(term_months));
+  type CustomRow = { installment_no: number; interest_component: number; principal_component: number };
+  let customSchedule: CustomRow[] | null = null;
+  if (!isOpenEnded && customScheduleStr) {
+    try { customSchedule = JSON.parse(customScheduleStr); } catch { customSchedule = null; }
+  }
 
-    const [result] = await conn.execute(
-      `INSERT INTO loans (loan_number, customer_id, staff_id, principal, interest_rate, term_months,
-        monthly_payment, total_payment, total_interest, status, start_date, end_date, purpose, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
-      [loanNumber, customer_id, user.userId, principal, interest_rate, term_months,
-       monthlyPayment, totalPayment, totalInterest,
-       loanStart.toISOString().split('T')[0], loanEnd.toISOString().split('T')[0],
-       purpose ?? null, notes ?? null]
-    );
-    const loanId = (result as { insertId: number }).insertId;
+  let monthlyPayment: number;
+  let totalPayment: number;
+  let totalInterest: number;
 
-    const schedule = buildSchedule(Number(principal), Number(interest_rate), Number(term_months), monthlyPayment, loanStart);
-    for (const row of schedule) {
-      await conn.execute(
-        `INSERT INTO payment_schedule (loan_id, installment_no, due_date, principal_component,
-         interest_component, due_amount, outstanding_balance) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [loanId, row.installment_no, row.due_date, row.principal_component,
-         row.interest_component, row.due_amount, row.outstanding_balance]
-      );
+  if (isOpenEnded) {
+    monthlyPayment = 0; totalPayment = 0; totalInterest = 0;
+  } else if (customSchedule && customSchedule.length === Number(term_months)) {
+    totalInterest  = Math.round(customSchedule.reduce((s, r) => s + r.interest_component, 0) * 100) / 100;
+    totalPayment   = Math.round((Number(principal) + totalInterest) * 100) / 100;
+    monthlyPayment = Math.round((totalPayment / Number(term_months)) * 100) / 100;
+  } else {
+    monthlyPayment = calcMonthlyPayment(Number(principal), Number(interest_rate), Number(term_months));
+    totalPayment   = Math.round(monthlyPayment * Number(term_months) * 100) / 100;
+    totalInterest  = Math.round((totalPayment - Number(principal)) * 100) / 100;
+  }
+
+  const db = await getDb();
+  const loanNumber = await generateLoanNumber();
+  const loanStart  = start_date ? new Date(start_date) : new Date();
+  const loanEnd    = isOpenEnded ? null : new Date(loanStart);
+  if (loanEnd) loanEnd.setMonth(loanEnd.getMonth() + Number(term_months));
+
+  const loanId = await nextId('loans');
+  await db.collection('loans').insertOne({
+    id: loanId,
+    loan_number: loanNumber,
+    customer_id: Number(customer_id),
+    staff_id: user.userId,
+    principal: Number(principal),
+    interest_rate: Number(interest_rate),
+    term_months: Number(term_months),
+    monthly_payment: monthlyPayment,
+    total_payment: totalPayment,
+    total_interest: totalInterest,
+    paid_amount: 0,
+    status: 'pending',
+    start_date: loanStart.toISOString().split('T')[0],
+    end_date: loanEnd ? loanEnd.toISOString().split('T')[0] : null,
+    purpose: purpose || null,
+    notes: notes || null,
+    created_at: new Date().toISOString(),
+  });
+
+  if (!isOpenEnded) {
+    if (customSchedule && customSchedule.length === Number(term_months)) {
+      let balance = Number(principal);
+      for (const row of customSchedule) {
+        const pc = Math.round(row.principal_component * 100) / 100;
+        const ic = Math.round(row.interest_component * 100) / 100;
+        balance  = Math.max(0, Math.round((balance - pc) * 100) / 100);
+        const dd = new Date(loanStart);
+        dd.setMonth(dd.getMonth() + row.installment_no);
+        const schedId = await nextId('payment_schedule');
+        await db.collection('payment_schedule').insertOne({
+          id: schedId, loan_id: loanId, installment_no: row.installment_no,
+          due_date: dd.toISOString().split('T')[0],
+          principal_component: pc, interest_component: ic,
+          due_amount: Math.round((pc + ic) * 100) / 100,
+          outstanding_balance: balance, status: 'pending', paid_date: null,
+        });
+      }
+    } else {
+      const schedule = buildSchedule(Number(principal), Number(interest_rate), Number(term_months), monthlyPayment, loanStart);
+      for (const row of schedule) {
+        const schedId = await nextId('payment_schedule');
+        await db.collection('payment_schedule').insertOne({
+          id: schedId, loan_id: loanId, ...row, status: 'pending', paid_date: null,
+        });
+      }
     }
+  }
 
-    await conn.commit();
-    await audit(user.userId, 'CREATE_LOAN', 'loan', loanId, { loanNumber, principal, interest_rate, term_months });
-    return NextResponse.json({ id: loanId, loan_number: loanNumber, monthly_payment: monthlyPayment, total_payment: totalPayment }, { status: 201 });
-  } catch (e) {
-    await conn.rollback();
-    throw e;
-  } finally { conn.release(); }
+  if (slip && slip.size > 0) {
+    const { writeFile, mkdir } = await import('fs/promises');
+    const { join } = await import('path');
+    const dir = join(process.cwd(), 'public', 'uploads', 'loans', String(loanId));
+    await mkdir(dir, { recursive: true });
+    const ext = slip.name.split('.').pop() ?? 'bin';
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    await writeFile(join(dir, fileName), Buffer.from(await slip.arrayBuffer()));
+    const filePath = `/uploads/loans/${loanId}/${fileName}`;
+    const docId = await nextId('loan_documents');
+    await db.collection('loan_documents').insertOne({
+      id: docId, loan_id: loanId, file_name: slip.name,
+      file_path: filePath, uploaded_by: user.userId, created_at: new Date().toISOString(),
+    });
+  }
+
+  await audit(user.userId, 'CREATE_LOAN', 'loan', loanId, { loanNumber, principal, interest_rate, term_months });
+  return NextResponse.json({ id: loanId, loan_number: loanNumber, monthly_payment: monthlyPayment, total_payment: totalPayment }, { status: 201 });
+  } catch (err) {
+    console.error('POST /api/loan/loans error:', err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }

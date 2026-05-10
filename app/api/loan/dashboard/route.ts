@@ -1,77 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/loan-db';
+import { getDb } from '@/lib/loan-db';
 import { getAuthUser } from '@/lib/loan-auth';
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const conn = await pool.getConnection();
-  try {
-    const isCustomer = user.role === 'customer';
-    const idFilter = isCustomer ? 'WHERE l.customer_id = ?' : '';
-    const params: (string | number)[] = isCustomer ? [user.userId] : [];
+  const db = await getDb();
+  const isCustomer = user.role === 'customer';
+  const custMatch = isCustomer ? { customer_id: user.userId } : {};
+  const today = new Date().toISOString().split('T')[0];
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0];
 
-    // Loan status summary
-    const [loanStats] = await conn.execute(
-      `SELECT status, COUNT(*) AS count, COALESCE(SUM(principal),0) AS total_principal
-       FROM loans l ${idFilter} GROUP BY status`, params
+  // ── Loan status summary ────────────────────────────────────────────────────
+  const loanStats = await db.collection('loans').aggregate([
+    ...(isCustomer ? [{ $match: custMatch }] : []),
+    { $group: { _id: '$status', count: { $sum: 1 }, total_principal: { $sum: '$principal' } } },
+    { $project: { _id: 0, status: '$_id', count: 1, total_principal: 1 } },
+  ]).toArray();
+
+  // ── Total paid & payment count ─────────────────────────────────────────────
+  const payStatsPipeline: object[] = [{ $match: { status: 'approved' } }];
+  if (isCustomer) {
+    payStatsPipeline.push(
+      { $lookup: { from: 'loans', localField: 'loan_id', foreignField: 'id', as: 'loan' } },
+      { $unwind: '$loan' },
+      { $match: { 'loan.customer_id': user.userId } },
     );
+  }
+  payStatsPipeline.push({ $group: { _id: null, total_paid: { $sum: '$amount' }, payment_count: { $sum: 1 } } });
+  const payStats = await db.collection('payments').aggregate(payStatsPipeline).next();
 
-    // Total collected (approved payments)
-    const [payStats] = await conn.execute(
-      `SELECT COALESCE(SUM(p.amount),0) AS total_paid,
-       COUNT(p.id) AS payment_count
-       FROM payments p JOIN loans l ON p.loan_id = l.id
-       ${idFilter ? idFilter + ' AND' : 'WHERE'} p.status = 'approved'`,
-      isCustomer ? [user.userId] : []
+  // ── Outstanding balance ────────────────────────────────────────────────────
+  const [principalRes, paidRes] = await Promise.all([
+    db.collection('loans').aggregate([
+      ...(isCustomer ? [{ $match: custMatch }] : []),
+      { $group: { _id: null, total: { $sum: '$principal' } } },
+    ]).next(),
+    db.collection('payments').aggregate([
+      { $match: { status: 'approved' } },
+      ...(isCustomer ? [
+        { $lookup: { from: 'loans', localField: 'loan_id', foreignField: 'id', as: 'loan' } },
+        { $unwind: '$loan' },
+        { $match: { 'loan.customer_id': user.userId } },
+      ] : []),
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]).next(),
+  ]);
+  const outstandingBalance = (principalRes?.total ?? 0) - (paidRes?.total ?? 0);
+
+  // ── Pending payments ───────────────────────────────────────────────────────
+  let pendingPayments = 0;
+  if (isCustomer) {
+    const res = await db.collection('payments').aggregate([
+      { $match: { status: 'pending' } },
+      { $lookup: { from: 'loans', localField: 'loan_id', foreignField: 'id', as: 'loan' } },
+      { $unwind: '$loan' },
+      { $match: { 'loan.customer_id': user.userId } },
+      { $count: 'count' },
+    ]).next();
+    pendingPayments = res?.count ?? 0;
+  } else {
+    pendingPayments = await db.collection('payments').countDocuments({ status: 'pending' });
+  }
+
+  // ── Monthly income (last 6 months) ─────────────────────────────────────────
+  const monthlyPipeline: object[] = [{ $match: { status: 'approved', payment_date: { $gte: sixMonthsAgoStr } } }];
+  if (isCustomer) {
+    monthlyPipeline.push(
+      { $lookup: { from: 'loans', localField: 'loan_id', foreignField: 'id', as: 'loan' } },
+      { $unwind: '$loan' },
+      { $match: { 'loan.customer_id': user.userId } },
     );
+  }
+  monthlyPipeline.push(
+    { $addFields: { month: { $substr: ['$payment_date', 0, 7] } } },
+    { $group: { _id: '$month', amount: { $sum: '$amount' }, count: { $sum: 1 } } },
+    { $project: { _id: 0, month: '$_id', amount: 1, count: 1 } },
+    { $sort: { month: 1 } },
+  );
+  const monthly = await db.collection('payments').aggregate(monthlyPipeline).toArray();
 
-    // Outstanding balance (active loans)
-    const [outstanding] = await conn.execute(
-      `SELECT COALESCE(SUM(ps.outstanding_balance),0) AS outstanding
-       FROM payment_schedule ps JOIN loans l ON ps.loan_id = l.id
-       ${idFilter ? idFilter + ' AND' : 'WHERE'} l.status = 'active'
-       AND ps.id = (SELECT MAX(id) FROM payment_schedule WHERE loan_id = l.id)`,
-      isCustomer ? [user.userId] : []
-    );
+  // ── Overdue installments ───────────────────────────────────────────────────
+  const overdueRes = await db.collection('payment_schedule').aggregate([
+    { $match: { due_date: { $lt: today }, status: { $ne: 'paid' } } },
+    { $lookup: { from: 'loans', localField: 'loan_id', foreignField: 'id', as: 'loan' } },
+    { $unwind: '$loan' },
+    { $match: { 'loan.status': 'active', ...(isCustomer ? { 'loan.customer_id': user.userId } : {}) } },
+    { $count: 'overdue' },
+  ]).next();
 
-    // Pending payments count
-    const [pendingPay] = await conn.execute(
-      `SELECT COUNT(*) AS pending_payments FROM payments p
-       JOIN loans l ON p.loan_id = l.id
-       ${idFilter ? idFilter + ' AND' : 'WHERE'} p.status = 'pending'`,
-      isCustomer ? [user.userId] : []
-    );
-
-    // Monthly income (last 6 months)
-    const [monthly] = await conn.execute(
-      `SELECT DATE_FORMAT(p.payment_date, '%Y-%m') AS month,
-       COALESCE(SUM(p.amount),0) AS amount, COUNT(*) AS count
-       FROM payments p JOIN loans l ON p.loan_id = l.id
-       ${idFilter ? idFilter + ' AND' : 'WHERE'} p.status = 'approved'
-       AND p.payment_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-       GROUP BY month ORDER BY month`,
-      isCustomer ? [user.userId] : []
-    );
-
-    // Overdue installments
-    const [overdue] = await conn.execute(
-      `SELECT COUNT(*) AS overdue FROM payment_schedule ps
-       JOIN loans l ON ps.loan_id = l.id
-       ${idFilter ? idFilter + ' AND' : 'WHERE'} ps.due_date < CURDATE()
-       AND ps.status NOT IN ('paid') AND l.status = 'active'`,
-      isCustomer ? [user.userId] : []
-    );
-
-    return NextResponse.json({
-      loan_stats: loanStats,
-      total_paid: (payStats as { total_paid: number }[])[0]?.total_paid ?? 0,
-      payment_count: (payStats as { payment_count: number }[])[0]?.payment_count ?? 0,
-      outstanding_balance: (outstanding as { outstanding: number }[])[0]?.outstanding ?? 0,
-      pending_payments: (pendingPay as { pending_payments: number }[])[0]?.pending_payments ?? 0,
-      overdue_installments: (overdue as { overdue: number }[])[0]?.overdue ?? 0,
-      monthly_income: monthly,
-    });
-  } finally { conn.release(); }
+  return NextResponse.json({
+    loan_stats: loanStats,
+    total_paid: payStats?.total_paid ?? 0,
+    payment_count: payStats?.payment_count ?? 0,
+    outstanding_balance: outstandingBalance,
+    pending_payments: pendingPayments,
+    overdue_installments: overdueRes?.overdue ?? 0,
+    monthly_income: monthly,
+  });
 }

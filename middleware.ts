@@ -5,7 +5,7 @@ const loanSecret = new TextEncoder().encode(
   process.env.LOAN_JWT_SECRET || 'loan-secret-change-in-production'
 );
 
-const LOAN_PUBLIC = ['/loan/login', '/api/loan/auth/login'];
+const LOAN_PUBLIC = ['/loan/login', '/api/loan/auth/login', '/api/loan/line-webhook'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
