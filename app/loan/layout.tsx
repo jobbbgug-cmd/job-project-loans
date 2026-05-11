@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { LangProvider, LangToggle, useLang } from '@/contexts/LangContext';
 import { ToastProvider } from '@/contexts/ToastContext';
+import { ThemeProvider, ThemeToggle } from '@/contexts/ThemeContext';
 
 interface User { userId: number; name: string; email: string; role: string; }
 
@@ -48,14 +49,14 @@ function LoanLayoutInner({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (pathname === '/loan/login') { setLoading(false); return; }
+    if (pathname === '/loan/login' || pathname === '/loan/register') { setLoading(false); return; }
     fetch('/api/loan/auth/me').then(r => r.json().catch(() => ({ error: true }))).then(d => {
       if (d.error) router.push('/loan/login');
       else setUser(d);
     }).catch(() => router.push('/loan/login')).finally(() => setLoading(false));
   }, [pathname, router]);
 
-  if (pathname === '/loan/login') return <>{children}</>;
+  if (pathname === '/loan/login' || pathname === '/loan/register') return <>{children}</>;
   if (loading) return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center">
       <div className="text-slate-400 text-sm">{t.loanDetail.loading}</div>
@@ -152,6 +153,7 @@ function LoanLayoutInner({ children }: { children: React.ReactNode }) {
             <span className="text-white font-bold text-sm">Money</span>
           </div>
           <div className="flex-1" />
+          <ThemeToggle />
           <LangToggle />
           {/* Mobile: badge บน + ชื่อล่าง | Desktop: ชื่อ + badge ข้างกัน */}
           <span className="flex-shrink-0">
@@ -173,10 +175,12 @@ function LoanLayoutInner({ children }: { children: React.ReactNode }) {
 
 export default function LoanLayout({ children }: { children: React.ReactNode }) {
   return (
-    <LangProvider>
-      <ToastProvider>
-        <LoanLayoutInner>{children}</LoanLayoutInner>
-      </ToastProvider>
-    </LangProvider>
+    <ThemeProvider>
+      <LangProvider>
+        <ToastProvider>
+          <LoanLayoutInner>{children}</LoanLayoutInner>
+        </ToastProvider>
+      </LangProvider>
+    </ThemeProvider>
   );
 }

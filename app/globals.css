@@ -5,3 +5,69 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-slide-down { animation: slide-down 0.2s ease-out; }
+
+/* ── CSS variables for inline styles ──────────────────────────────────────── */
+:root {
+  --schedule-thead: #1a2332;
+  --schedule-tfoot: #141e2e;
+}
+
+html[data-theme="light"] {
+  --schedule-thead: #f8fafc;
+  --schedule-tfoot: #f1f5f9;
+}
+
+/* ── Light theme overrides ────────────────────────────────────────────────── */
+
+/* Backgrounds */
+html[data-theme="light"] .bg-slate-900  { background-color: #f1f5f9 !important; }
+html[data-theme="light"] .bg-slate-800  { background-color: #ffffff !important; }
+html[data-theme="light"] .bg-slate-700  { background-color: #e2e8f0 !important; }
+html[data-theme="light"] .bg-slate-700\/30 { background-color: rgba(226,232,240,0.5) !important; }
+html[data-theme="light"] .bg-slate-700\/40 { background-color: rgba(226,232,240,0.7) !important; }
+
+/* Borders */
+html[data-theme="light"] .border-slate-700      { border-color: #cbd5e1 !important; }
+html[data-theme="light"] .border-slate-700\/50  { border-color: rgba(203,213,225,0.7) !important; }
+html[data-theme="light"] .border-slate-600      { border-color: #94a3b8 !important; }
+
+/* Text — primary */
+html[data-theme="light"] .text-white    { color: #1e293b !important; }
+html[data-theme="light"] .text-slate-300 { color: #334155 !important; }
+html[data-theme="light"] .text-slate-400 { color: #64748b !important; }
+html[data-theme="light"] .text-slate-500 { color: #94a3b8 !important; }
+
+/* Text — accents (darker for readability on white) */
+html[data-theme="light"] .text-yellow-400  { color: #92400e !important; }
+html[data-theme="light"] .text-yellow-300  { color: #78350f !important; }
+html[data-theme="light"] .text-blue-400    { color: #1e40af !important; }
+html[data-theme="light"] .text-emerald-400 { color: #065f46 !important; }
+html[data-theme="light"] .text-red-400     { color: #991b1b !important; }
+html[data-theme="light"] .text-red-500     { color: #b91c1c !important; }
+html[data-theme="light"] .text-purple-400  { color: #6b21a8 !important; }
+
+/* Badge backgrounds */
+html[data-theme="light"] .bg-yellow-500\/20  { background-color: #fef3c7 !important; }
+html[data-theme="light"] .bg-blue-500\/20    { background-color: #dbeafe !important; }
+html[data-theme="light"] .bg-red-500\/20     { background-color: #fee2e2 !important; }
+html[data-theme="light"] .bg-emerald-500\/20 { background-color: #d1fae5 !important; }
+html[data-theme="light"] .bg-purple-500\/20  { background-color: #f3e8ff !important; }
+html[data-theme="light"] .bg-slate-500\/20   { background-color: #f1f5f9 !important; }
+
+/* Active nav / buttons (keep yellow, slightly brighter) */
+html[data-theme="light"] .bg-yellow-600  { background-color: #d97706 !important; }
+html[data-theme="light"] .bg-emerald-600 { background-color: #059669 !important; }
+
+/* Hover states */
+html[data-theme="light"] .hover\:bg-slate-700:hover   { background-color: #cbd5e1 !important; }
+html[data-theme="light"] .hover\:bg-slate-600:hover   { background-color: #94a3b8 !important; }
+html[data-theme="light"] .hover\:text-white:hover     { color: #0f172a !important; }
+html[data-theme="light"] .hover\:text-red-400:hover   { color: #991b1b !important; }
+
+/* Table row hover */
+html[data-theme="light"] .hover\:bg-slate-700\/30:hover { background-color: rgba(226,232,240,0.5) !important; }
+
+/* Table dividers */
+html[data-theme="light"] .divide-slate-700\/50 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(203,213,225,0.7) !important;
+}

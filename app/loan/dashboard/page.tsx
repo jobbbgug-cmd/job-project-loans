@@ -12,6 +12,7 @@ interface DashboardData {
   pending_payments: number;
   overdue_installments: number;
   monthly_income: { month: string; amount: number; count: number }[];
+  total_interest_paid: number;
 }
 interface User { role: string; }
 
@@ -67,6 +68,7 @@ export default function DashboardPage() {
           <StatCard label={t.dashboard.totalPrincipal} value={fmt(totalPrincipal)} color="text-yellow-400" />
           <StatCard label={t.dashboard.totalCollected} value={fmt(Number(data.total_paid))} sub={`${data.payment_count} ${t.dashboard.payments}`} color="text-blue-400" />
           <StatCard label={t.dashboard.outstandingBalance} value={fmt(Number(data.outstanding_balance))} color="text-yellow-400" />
+          <StatCard label="ดอกเบี้ยที่จ่ายแล้ว" value={fmt(Number(data.total_interest_paid))} color="text-emerald-400" />
         </div>
       </div>
     );
@@ -94,6 +96,9 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label={t.dashboard.pendingPayments} value={String(data.pending_payments)} sub={t.dashboard.awaitingVerification} color="text-yellow-400" />
         <StatCard label={t.dashboard.overdueInstallments} value={String(data.overdue_installments)} color="text-red-400" />
+        <div className="col-span-2 lg:col-span-1">
+          <StatCard label="ดอกเบี้ยที่จ่ายแล้ว" value={fmt(Number(data.total_interest_paid))} color="text-emerald-400" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

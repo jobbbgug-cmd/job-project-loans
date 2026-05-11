@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
 
-interface Payment { id: number; payment_number: string | null; loan_number: string; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; verified_at: string | null; }
+interface Payment { id: number; loan_id: number; payment_number: string | null; loan_number: string; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; verified_at: string | null; loan_principal: number; loan_paid_amount: number; loan_term_months: number; }
 interface User { role: string; }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -44,6 +44,18 @@ export default function PaymentsPage() {
   const filtered = filter ? payments.filter(p => p.status === filter) : payments;
   const statuses = ['', 'pending', 'approved', 'rejected'] as const;
 
+  // Group all payments by loan for mobile cards
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const loanGroups = useMemo(() => {
+    const map = new Map<number, { loan_id: number; loan_number: string; customer_name: string; loan_principal: number; loan_paid_amount: number; loan_term_months: number; payments: Payment[] }>();
+    for (const p of payments) {
+      if (!map.has(p.loan_id)) map.set(p.loan_id, { loan_id: p.loan_id, loan_number: p.loan_number, customer_name: p.customer_name, loan_principal: p.loan_principal, loan_paid_amount: p.loan_paid_amount, loan_term_months: p.loan_term_months, payments: [] });
+      map.get(p.loan_id)!.payments.push(p);
+    }
+    return Array.from(map.values());
+  }, [payments]);
+  const filteredGroups = filter ? loanGroups.filter(g => g.payments.some(p => p.status === filter)) : loanGroups;
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -73,7 +85,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Mobile filter cards */}
-      <div className="grid grid-cols-2 gap-3 md:hidden">
+      <div className="grid grid-cols-4 gap-2 md:hidden">
         {statuses.map(s => {
           const count = s === '' ? payments.length : payments.filter(p => p.status === s).length;
           const isActive = filter === s;
@@ -87,11 +99,11 @@ export default function PaymentsPage() {
             : 'text-white';
           return (
             <button key={s} onClick={() => setFilter(s)}
-              className={`rounded-xl p-3 text-center transition-colors ${isActive ? activeColor : 'bg-slate-800 border border-slate-700'}`}>
-              <div className={`text-xs font-medium mb-1 ${isActive ? 'text-white' : 'text-slate-400'}`}>
+              className={`rounded-xl py-2.5 px-1 text-center transition-colors ${isActive ? activeColor : 'bg-slate-800 border border-slate-700'}`}>
+              <div className={`text-[10px] font-medium mb-1 leading-tight ${isActive ? 'text-white' : 'text-slate-400'}`}>
                 {s === '' ? t.loans.all : (PAY_STATUS_LABEL[s] ?? s)}
               </div>
-              <div className={`text-xl font-bold ${isActive ? 'text-white' : numColor}`}>
+              <div className={`text-base font-bold ${isActive ? 'text-white' : numColor}`}>
                 {count}
               </div>
             </button>
@@ -157,53 +169,101 @@ export default function PaymentsPage() {
         )}
       </div>
 
-      {/* Mobile card list */}
+      {/* Mobile card list — grouped by loan */}
       <div className="md:hidden space-y-3">
         {loading ? (
           <div className="p-8 text-center text-slate-400 text-sm">{t.payments.loading}</div>
-        ) : filtered.length === 0 ? (
+        ) : filteredGroups.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm">{t.payments.noFound}</div>
-        ) : filtered.map(p => (
-          <div key={p.id} className="bg-slate-800 rounded-xl border border-slate-700 p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <div className="text-blue-400 font-mono text-xs mb-0.5">{p.payment_number ?? '—'}</div>
-                <div className="text-white font-medium">{p.customer_name}</div>
-                {p.installment_no && <div className="text-slate-400 text-xs">งวด {p.installment_no}</div>}
+        ) : filteredGroups.map(g => {
+          const remaining = Math.max(0, Number(g.loan_principal ?? 0) - Number(g.loan_paid_amount ?? 0));
+          const paidInstallments = g.payments.filter(p => p.status === 'approved').length;
+          const termMonths = Number(g.loan_term_months ?? 0);
+          const pct = termMonths > 0 ? Math.min(100, (paidInstallments / termMonths) * 100) : 0;
+          const visiblePayments = filter ? g.payments.filter(p => p.status === filter) : g.payments;
+          const isOpen = expanded.has(g.loan_id);
+          // overall status of this group for badge
+          const hasPending = g.payments.some(p => p.status === 'pending');
+          const badgeStatus = filter || (hasPending ? 'pending' : g.payments[0]?.status ?? '');
+
+          return (
+            <div key={g.loan_id} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+              {/* Card header */}
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="min-w-0">
+                    <div className="text-white font-semibold">{g.customer_name}</div>
+                    <div className="text-slate-400 text-xs mt-0.5">{g.loan_number}</div>
+                  </div>
+                  {badgeStatus && (
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 ${STATUS_BADGE[badgeStatus] ?? ''}`}>
+                      {PAY_STATUS_LABEL[badgeStatus] ?? badgeStatus}
+                    </span>
+                  )}
+                </div>
+
+                {/* Paid / Remaining */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="bg-slate-700/50 rounded-lg px-3 py-2">
+                    <div className="text-slate-400 text-[10px] mb-0.5">จ่ายไปแล้ว</div>
+                    <div className="text-blue-400 font-bold text-sm">฿{fmt(Number(g.loan_paid_amount ?? 0))}</div>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-lg px-3 py-2">
+                    <div className="text-slate-400 text-[10px] mb-0.5">คงเหลือ</div>
+                    <div className={`font-bold text-sm ${remaining === 0 ? 'text-emerald-400' : 'text-yellow-400'}`}>฿{fmt(remaining)}</div>
+                  </div>
+                </div>
+
+                {/* Installment progress */}
+                {termMonths > 0 && (
+                  <div className="mb-1">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="text-slate-400">งวดที่จ่ายแล้ว</span>
+                      <span className="text-white font-bold">{paidInstallments}/{termMonths}</span>
+                    </div>
+                    <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-yellow-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )}
               </div>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-2 ${STATUS_BADGE[p.status]}`}>
-                {PAY_STATUS_LABEL[p.status] ?? p.status}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm mb-3">
-              <div>
-                <div className="text-slate-500 text-xs">{t.payments.cols.amount}</div>
-                <div className="text-white font-medium">฿{fmt(Number(p.amount))}</div>
-              </div>
-              <div>
-                <div className="text-slate-500 text-xs">{t.payments.cols.date}</div>
-                <div className="text-slate-300">{fmtDate(p.payment_date)}</div>
-              </div>
-              {p.slip_path && (
-                <div className="col-span-2">
-                  <a href={p.slip_path} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 text-xs underline">{t.payments.viewSlip}</a>
+
+              {/* Toggle detail */}
+              <button
+                onClick={() => setExpanded(prev => { const s = new Set(prev); s.has(g.loan_id) ? s.delete(g.loan_id) : s.add(g.loan_id); return s; })}
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-slate-700 text-slate-400 text-xs font-medium hover:bg-slate-700/30 transition-colors">
+                <span>ดูรายละเอียด ({visiblePayments.length} รายการ)</span>
+                <svg className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Expanded payment list */}
+              {isOpen && (
+                <div className="border-t border-slate-700 divide-y divide-slate-700/50">
+                  {visiblePayments.map(p => (
+                    <div key={p.id} className="px-4 py-3 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white text-sm font-medium">฿{fmt(Number(p.amount))}</span>
+                          {p.installment_no && <span className="text-slate-500 text-xs">งวด {p.installment_no}</span>}
+                        </div>
+                        <div className="text-slate-400 text-xs mt-0.5">{fmtDate(p.payment_date)}</div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${STATUS_BADGE[p.status]}`}>
+                        {PAY_STATUS_LABEL[p.status] ?? p.status}
+                      </span>
+                      <Link href={`/loan/payments/${p.id}`}
+                        className="px-2.5 py-1 rounded-lg bg-slate-700 text-slate-300 text-xs font-medium flex-shrink-0">
+                        ดู
+                      </Link>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
-              <Link href={`/loan/payments/${p.id}`} className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium transition-colors">{t.payments.view}</Link>
-              {user && ['admin', 'staff'].includes(user.role) && p.status === 'pending' && (
-                <Link href={`/loan/payments/${p.id}`} className="px-3 py-1.5 rounded-lg bg-yellow-500/15 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/30 text-xs font-medium transition-colors">{t.payments.verify}</Link>
-              )}
-              {user && ['admin', 'staff'].includes(user.role) && (
-                <button onClick={() => deletePayment(p.id)} disabled={deleting === p.id}
-                  className="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-xs font-medium transition-colors disabled:opacity-40">
-                  {deleting === p.id ? '…' : 'ลบ'}
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

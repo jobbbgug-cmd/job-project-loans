@@ -405,7 +405,7 @@ export default function EditLoanPage() {
                   );
                 })}
               </div>
-              <div className="border-t border-slate-700 px-4 py-3 flex items-center justify-between" style={{ background: '#141e2e' }}>
+              <div className="border-t border-slate-700 px-4 py-3 flex items-center justify-between" style={{ background: 'var(--schedule-tfoot)' }}>
                 <button type="button"
                   onClick={() => {
                     setScheduleInterest(prev => [...prev, flatMonthlyInterest > 0 ? String(r2(flatMonthlyInterest)) : '0']);
@@ -426,7 +426,7 @@ export default function EditLoanPage() {
             {/* Desktop table */}
             <div className="hidden md:block max-h-96 overflow-y-auto overflow-x-auto">
               <table className="w-full text-sm min-w-[520px]">
-                <thead className="sticky top-0 z-10" style={{ background: '#1a2332' }}>
+                <thead className="sticky top-0 z-10" style={{ background: 'var(--schedule-thead)' }}>
                   <tr className="border-b border-slate-700 text-slate-400 text-xs">
                     <th className="px-4 py-3 text-left font-medium w-10">{t.newLoan.schedCols.no}</th>
                     <th className="px-4 py-3 text-left font-medium">{t.newLoan.schedCols.dueDate}</th>
@@ -473,7 +473,7 @@ export default function EditLoanPage() {
                     </td>
                   </tr>
                 </tbody>
-                <tfoot style={{ background: '#141e2e' }} className="border-t border-slate-700">
+                <tfoot style={{ background: 'var(--schedule-tfoot)' }} className="border-t border-slate-700">
                   <tr>
                     <td colSpan={2} className="px-4 py-2.5 text-slate-400 text-xs">รวมเงินต้น</td>
                     <td className="px-4 py-2.5 text-right text-white text-xs font-bold">฿{fmt(totalPrincipalSched)}</td>

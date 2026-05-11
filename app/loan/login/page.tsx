@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { LangProvider, LangToggle, useLang } from '@/contexts/LangContext';
 
 function LoginForm() {
@@ -11,6 +12,8 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justRegistered = searchParams.get('registered') === '1';
   const { t } = useLang();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -48,6 +51,9 @@ function LoginForm() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-slate-800 rounded-2xl border border-slate-700 p-8 space-y-4">
+          {justRegistered && (
+            <div className="bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 text-sm rounded-lg px-4 py-3">สมัครสำเร็จ! กรุณาเข้าสู่ระบบ</div>
+          )}
           {error && (
             <div className="bg-red-900/40 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3">{error}</div>
           )}
@@ -55,7 +61,7 @@ function LoginForm() {
             <label className="block text-sm font-medium text-slate-300 mb-1.5">{t.login.email}</label>
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              placeholder="admin@loanapp.com"
+              placeholder="email@example.com"
               className="w-full rounded-lg bg-slate-700 border border-slate-600 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
           </div>
@@ -74,7 +80,12 @@ function LoginForm() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-slate-500 mt-4">{t.login.defaultCreds}</p>
+        <p className="text-center text-xs text-slate-500 mt-4">
+          ยังไม่มีบัญชี?{' '}
+          <Link href="/loan/register" className="text-yellow-400 hover:text-yellow-300 underline underline-offset-2">
+            สมัครเข้าใช้งาน
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -92,6 +92,18 @@ export async function GET(request: NextRequest) {
     { $count: 'overdue' },
   ]).next();
 
+  // ── Interest paid (from paid schedule rows) ────────────────────────────────
+  const interestPipeline: object[] = [
+    { $match: { status: 'paid' } },
+    ...(isCustomer ? [
+      { $lookup: { from: 'loans', localField: 'loan_id', foreignField: 'id', as: 'loan' } },
+      { $unwind: '$loan' },
+      { $match: { 'loan.customer_id': user.userId } },
+    ] : []),
+    { $group: { _id: null, total: { $sum: '$interest_component' } } },
+  ];
+  const interestRes = await db.collection('payment_schedule').aggregate(interestPipeline).next();
+
   return NextResponse.json({
     loan_stats: loanStats,
     total_paid: payStats?.total_paid ?? 0,
@@ -100,5 +112,6 @@ export async function GET(request: NextRequest) {
     pending_payments: pendingPayments,
     overdue_installments: overdueRes?.overdue ?? 0,
     monthly_income: monthly,
+    total_interest_paid: interestRes?.total ?? 0,
   });
 }

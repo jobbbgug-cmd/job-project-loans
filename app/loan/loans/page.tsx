@@ -180,6 +180,21 @@ export default function LoansPage() {
                 <div className="text-blue-400">฿{fmt(Number(loan.paid_amount))}</div>
               </div>
             </div>
+            {/* Progress bar */}
+            {loan.principal > 0 && (() => {
+              const pct = Math.min(100, (Number(loan.paid_amount) / loan.principal) * 100);
+              return (
+                <div className="mb-3">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">ชำระแล้ว</span>
+                    <span className="text-yellow-400 font-medium">฿{fmt(Number(loan.paid_amount))} / ฿{fmt(loan.principal)}</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-yellow-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })()}
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
               <Link href={`/loan/loans/${loan.id}`} className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium transition-colors">{t.loans.view}</Link>
               {user && ['admin', 'staff'].includes(user.role) && (
