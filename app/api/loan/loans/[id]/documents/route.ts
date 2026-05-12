@@ -27,15 +27,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const file = formData.get('file') as File | null;
   if (!file || file.size === 0) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
 
-  const { put } = await import('@vercel/blob');
   const ext = file.name.split('.').pop() ?? 'bin';
-  const fileName = `loans/${id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
   let filePath: string;
-  try {
-    const result = await put(fileName, file, { access: 'public' });
-    filePath = result.url;
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const { put } = await import('@vercel/blob');
+    const { url } = await put(`loans/${id}/${uniqueName}`, file, { access: 'public' });
+    filePath = url;
+  } else {
+    const { writeFile, mkdir } = await import('fs/promises');
+    const { join } = await import('path');
+    const dir = join(process.cwd(), 'public', 'uploads', 'loans', id);
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, uniqueName), Buffer.from(await file.arrayBuffer()));
+    filePath = `/uploads/loans/${id}/${uniqueName}`;
   }
 
   const db = await getDb();
