@@ -79,14 +79,11 @@ export async function POST(request: NextRequest) {
   let slipFilename: string | null = null;
   let slipPath: string | null = null;
   if (slip && slip.size > 0) {
-    const { writeFile, mkdir } = await import('fs/promises');
-    const { join } = await import('path');
-    const dir = join(process.cwd(), 'public', 'uploads', 'slips');
-    await mkdir(dir, { recursive: true });
+    const { put } = await import('@vercel/blob');
     const ext = slip.name.split('.').pop() ?? 'jpg';
     slipFilename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    await writeFile(join(dir, slipFilename), Buffer.from(await slip.arrayBuffer()));
-    slipPath = `/uploads/slips/${slipFilename}`;
+    const { url } = await put(`slips/${slipFilename}`, slip, { access: 'public' });
+    slipPath = url;
   }
 
   // For open-ended loans (term_months=0), auto-create a schedule entry

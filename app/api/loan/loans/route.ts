@@ -150,18 +150,14 @@ export async function POST(request: NextRequest) {
   }
 
   if (slip && slip.size > 0) {
-    const { writeFile, mkdir } = await import('fs/promises');
-    const { join } = await import('path');
-    const dir = join(process.cwd(), 'public', 'uploads', 'loans', String(loanId));
-    await mkdir(dir, { recursive: true });
+    const { put } = await import('@vercel/blob');
     const ext = slip.name.split('.').pop() ?? 'bin';
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    await writeFile(join(dir, fileName), Buffer.from(await slip.arrayBuffer()));
-    const filePath = `/uploads/loans/${loanId}/${fileName}`;
+    const fileName = `loans/${loanId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { url } = await put(fileName, slip, { access: 'public' });
     const docId = await nextId('loan_documents');
     await db.collection('loan_documents').insertOne({
       id: docId, loan_id: loanId, file_name: slip.name,
-      file_path: filePath, uploaded_by: user.userId, created_at: new Date().toISOString(),
+      file_path: url, uploaded_by: user.userId, created_at: new Date().toISOString(),
     });
   }
 

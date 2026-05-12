@@ -46,10 +46,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const payment = await db.collection('payments').findOne({ id: Number(id) });
   if (!payment) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  if (payment.slip_filename) {
-    const { unlink } = await import('fs/promises');
-    const { join } = await import('path');
-    await unlink(join(process.cwd(), 'public', 'uploads', 'slips', payment.slip_filename as string)).catch(() => {});
+  if (payment.slip_path) {
+    const { del } = await import('@vercel/blob');
+    await del(payment.slip_path as string).catch(() => {});
   }
 
   await db.collection('payments').deleteOne({ id: Number(id) });

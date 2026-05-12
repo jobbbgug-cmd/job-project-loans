@@ -27,15 +27,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const file = formData.get('file') as File | null;
   if (!file || file.size === 0) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
 
-  const { writeFile, mkdir } = await import('fs/promises');
-  const { join } = await import('path');
-  const bytes = await file.arrayBuffer();
-  const dir = join(process.cwd(), 'public', 'uploads', 'loans', id);
-  await mkdir(dir, { recursive: true });
+  const { put } = await import('@vercel/blob');
   const ext = file.name.split('.').pop() ?? 'bin';
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  await writeFile(join(dir, fileName), Buffer.from(bytes));
-  const filePath = `/uploads/loans/${id}/${fileName}`;
+  const fileName = `loans/${id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { url: filePath } = await put(fileName, file, { access: 'public' });
 
   const db = await getDb();
   const docId = await nextId('loan_documents');
@@ -62,9 +57,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const doc = await db.collection('loan_documents').findOne({ id: Number(docId), loan_id: Number(id) });
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { unlink } = await import('fs/promises');
-  const { join } = await import('path');
-  await unlink(join(process.cwd(), 'public', doc.file_path as string)).catch(() => {});
+  const { del } = await import('@vercel/blob');
+  await del(doc.file_path as string).catch(() => {});
   await db.collection('loan_documents').deleteOne({ id: Number(docId) });
   return NextResponse.json({ success: true });
 }
