@@ -19,21 +19,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getAuthUser(req);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id } = await params;
-
-  const formData = await req.formData();
-  const file = formData.get('file') as File | null;
-  if (!file || file.size === 0) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-
-  const ext = file.name.split('.').pop() ?? 'bin';
-  const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  let filePath: string;
   try {
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const user = await getAuthUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { id } = await params;
+
+    const formData = await req.formData();
+    const file = formData.get('file') as File | null;
+    if (!file || file.size === 0) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+
+    const ext = file.name.split('.').pop() ?? 'bin';
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    let filePath: string;
+
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (token) {
       const { put } = await import('@vercel/blob');
-      const { url } = await put(`loans/${id}/${uniqueName}`, file, { access: 'public' });
+      const { url } = await put(`loans/${id}/${uniqueName}`, file, { access: 'public', token });
       filePath = url;
     } else {
       const { writeFile, mkdir } = await import('fs/promises');
@@ -43,21 +45,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await writeFile(join(dir, uniqueName), Buffer.from(await file.arrayBuffer()));
       filePath = `/uploads/loans/${id}/${uniqueName}`;
     }
+
+    const db = await getDb();
+    const docId = await nextId('loan_documents');
+    await db.collection('loan_documents').insertOne({
+      id: docId, loan_id: Number(id), file_name: file.name,
+      file_path: filePath, uploaded_by: user.userId, created_at: new Date().toISOString(),
+    });
+    return NextResponse.json({ id: docId, file_name: file.name, file_path: filePath }, { status: 201 });
   } catch (err) {
+    console.error('upload error:', err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
-
-  const db = await getDb();
-  const docId = await nextId('loan_documents');
-  await db.collection('loan_documents').insertOne({
-    id: docId,
-    loan_id: Number(id),
-    file_name: file.name,
-    file_path: filePath,
-    uploaded_by: user.userId,
-    created_at: new Date().toISOString(),
-  });
-  return NextResponse.json({ id: docId, file_name: file.name, file_path: filePath }, { status: 201 });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
