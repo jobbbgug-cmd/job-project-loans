@@ -81,17 +81,21 @@ export async function POST(request: NextRequest) {
   if (slip && slip.size > 0) {
     const ext = slip.name.split('.').pop() ?? 'jpg';
     slipFilename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const { put } = await import('@vercel/blob');
-      const { url } = await put(`slips/${slipFilename}`, slip, { access: 'public' });
-      slipPath = url;
-    } else {
-      const { writeFile, mkdir } = await import('fs/promises');
-      const { join } = await import('path');
-      const dir = join(process.cwd(), 'public', 'uploads', 'slips');
-      await mkdir(dir, { recursive: true });
-      await writeFile(join(dir, slipFilename), Buffer.from(await slip.arrayBuffer()));
-      slipPath = `/uploads/slips/${slipFilename}`;
+    try {
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        const { put } = await import('@vercel/blob');
+        const { url } = await put(`slips/${slipFilename}`, slip, { access: 'public' });
+        slipPath = url;
+      } else {
+        const { writeFile, mkdir } = await import('fs/promises');
+        const { join } = await import('path');
+        const dir = join(process.cwd(), 'public', 'uploads', 'slips');
+        await mkdir(dir, { recursive: true });
+        await writeFile(join(dir, slipFilename), Buffer.from(await slip.arrayBuffer()));
+        slipPath = `/uploads/slips/${slipFilename}`;
+      }
+    } catch (err) {
+      return NextResponse.json({ error: String(err) }, { status: 500 });
     }
   }
 
