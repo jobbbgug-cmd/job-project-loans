@@ -30,7 +30,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { put } = await import('@vercel/blob');
   const ext = file.name.split('.').pop() ?? 'bin';
   const fileName = `loans/${id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const { url: filePath } = await put(fileName, file, { access: 'public' });
+  let filePath: string;
+  try {
+    const result = await put(fileName, file, { access: 'public' });
+    filePath = result.url;
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 
   const db = await getDb();
   const docId = await nextId('loan_documents');
