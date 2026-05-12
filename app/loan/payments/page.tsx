@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
+import { blobProxy } from '@/lib/blob-url';
 
 interface Payment { id: number; loan_id: number; payment_number: string | null; loan_number: string; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; verified_at: string | null; loan_principal: number; loan_paid_amount: number; loan_term_months: number; }
 interface User { role: string; }
@@ -139,7 +140,7 @@ export default function PaymentsPage() {
                     <td className="px-4 py-3 text-slate-300">{fmtDate(p.payment_date)}</td>
                     <td className="px-4 py-3">
                       {p.slip_path
-                        ? <a href={p.slip_path} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 text-xs underline">{t.payments.viewSlip}</a>
+                        ? <a href={blobProxy(p.slip_path)!} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 text-xs underline">{t.payments.viewSlip}</a>
                         : <span className="text-slate-500 text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3">

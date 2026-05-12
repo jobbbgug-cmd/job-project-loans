@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (token) {
       const { put } = await import('@vercel/blob');
-      const { url } = await put(`loans/${id}/${uniqueName}`, file, { access: 'public', token });
+      const { url } = await put(`loans/${id}/${uniqueName}`, file, { access: 'private', token });
       filePath = url;
     } else {
       const { writeFile, mkdir } = await import('fs/promises');

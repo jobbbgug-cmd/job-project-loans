@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
 import { useToast } from '@/contexts/ToastContext';
+import { blobProxy } from '@/lib/blob-url';
 
 interface Payment { id: number; payment_number: string | null; loan_number: string; loan_id: number; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; is_late: boolean; created_at: string; verified_at: string | null; verifier_name: string | null; rejection_reason: string | null; }
 interface User { role: string; }
@@ -109,9 +110,9 @@ export default function PaymentDetailPage() {
         {payment.slip_path && (
           <div className="border-t border-slate-700 pt-4">
             <p className="text-slate-400 text-xs mb-2">{t.paymentDetail.paymentSlip}</p>
-            <a href={payment.slip_path} target="_blank" rel="noreferrer">
+            <a href={blobProxy(payment.slip_path)!} target="_blank" rel="noreferrer">
               {payment.slip_path.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                <img src={payment.slip_path} alt="Payment slip" className="max-h-64 rounded-lg border border-slate-600 hover:border-yellow-500 transition-colors" />
+                <img src={blobProxy(payment.slip_path)!} alt="Payment slip" className="max-h-64 rounded-lg border border-slate-600 hover:border-yellow-500 transition-colors" />
               ) : (
                 <span className="text-blue-400 hover:text-blue-300 text-sm underline">{t.paymentDetail.viewSlipDoc}</span>
               )}

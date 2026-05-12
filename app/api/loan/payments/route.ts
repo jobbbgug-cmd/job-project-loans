@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (token) {
       const { put } = await import('@vercel/blob');
-      const { url } = await put(`slips/${slipFilename}`, slip, { access: 'public', token });
+      const { url } = await put(`slips/${slipFilename}`, slip, { access: 'private', token });
       slipPath = url;
     } else {
       const { writeFile, mkdir } = await import('fs/promises');

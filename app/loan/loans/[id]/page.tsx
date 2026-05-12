@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useLang } from '@/contexts/LangContext';
 import { useToast } from '@/contexts/ToastContext';
+import { blobProxy } from '@/lib/blob-url';
 
 interface Loan { id: number; loan_number: string; customer_name: string; customer_email: string; principal: number; interest_rate: number; term_months: number; monthly_payment: number; status: string; start_date: string; paid_amount: number; purpose: string; notes: string; created_at: string; }
 interface Schedule { id: number; installment_no: number; due_date: string; principal_component: number; interest_component: number; amount: number; remaining_balance: number; status: string; paid_date: string | null; }
@@ -257,11 +257,11 @@ export default function LoanDetailPage() {
               <div key={doc.id} className="group relative flex flex-col md:flex-row rounded-2xl overflow-hidden border border-slate-700 bg-slate-900 shadow-lg hover:shadow-xl hover:border-slate-600 transition-all duration-200">
                 {IMAGE_EXT.test(doc.file_path) ? (
                   <div className="relative w-full md:w-1/2 flex-shrink-0">
-                    <button onClick={() => setPreview(doc.file_path)} className="block w-full">
-                      <Image src={doc.file_path} alt={doc.file_name} width={0} height={0} sizes="100vw" className="w-full h-auto" />
+                    <button onClick={() => setPreview(blobProxy(doc.file_path))} className="block w-full">
+                      <img src={blobProxy(doc.file_path)!} alt={doc.file_name} className="w-full h-auto" />
                     </button>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
-                    <button onClick={() => setPreview(doc.file_path)}
+                    <button onClick={() => setPreview(blobProxy(doc.file_path))}
                       className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <div className="bg-white/10 backdrop-blur-sm rounded-full p-2.5 border border-white/20">
                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
@@ -269,7 +269,7 @@ export default function LoanDetailPage() {
                     </button>
                   </div>
                 ) : (
-                  <a href={doc.file_path} target="_blank" rel="noreferrer" className="w-full md:w-1/2 flex-shrink-0 flex flex-col items-center justify-center min-h-[100px] bg-gradient-to-br from-blue-900/40 to-slate-800 gap-2 group/pdf">
+                  <a href={blobProxy(doc.file_path)!} target="_blank" rel="noreferrer" className="w-full md:w-1/2 flex-shrink-0 flex flex-col items-center justify-center min-h-[100px] bg-gradient-to-br from-blue-900/40 to-slate-800 gap-2 group/pdf">
                     <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center group-hover/pdf:scale-110 transition-transform duration-200">
                       <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     </div>
@@ -344,7 +344,7 @@ export default function LoanDetailPage() {
                     <td className="px-4 py-3 text-white">{fmtDate(p.payment_date)}</td>
                     <td className="px-4 py-3 text-right text-yellow-400 font-mono font-semibold">฿{fmt(Number(p.amount))}</td>
                     <td className="px-4 py-3">
-                      {p.slip_path ? <a href={p.slip_path} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 text-xs underline">ดูสลิป</a> : <span className="text-slate-500 text-xs">—</span>}
+                      {p.slip_path ? <a href={blobProxy(p.slip_path)!} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 text-xs underline">ดูสลิป</a> : <span className="text-slate-500 text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3 text-slate-400 text-xs">{p.note || '—'}</td>
                     <td className="px-4 py-3">
@@ -390,7 +390,7 @@ export default function LoanDetailPage() {
                   <p className="text-yellow-400 font-mono font-bold text-base">฿{fmt(Number(p.amount))}</p>
                   <div className="flex items-center gap-3">
                     {p.slip_path && (
-                      <a href={p.slip_path} target="_blank" rel="noreferrer"
+                      <a href={blobProxy(p.slip_path)!} target="_blank" rel="noreferrer"
                         className="px-2.5 py-1 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30 text-xs font-medium">สลิป</a>
                     )}
                     <Link href={`/loan/payments/${p.id}?from=/loan/loans/${id}`}
