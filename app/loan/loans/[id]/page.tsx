@@ -87,12 +87,23 @@ export default function LoanDetailPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch(`/api/loan/loans/${id}/documents`, { method: 'POST', body: fd });
-    if (res.ok) await loadDocs();
-    setUploading(false);
-    if (fileRef.current) fileRef.current.value = '';
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`/api/loan/loans/${id}/documents`, { method: 'POST', body: fd });
+      if (res.ok) {
+        await loadDocs();
+        showToast('อัปโหลดสำเร็จ');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showToast('อัปโหลดไม่สำเร็จ: ' + (data.error ?? res.status), 'error');
+      }
+    } catch {
+      showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
   }
 
   async function deleteDoc(docId: number) {
