@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  try {
   const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -145,4 +146,8 @@ export async function POST(request: NextRequest) {
   });
   await audit(user.userId, 'RECORD_PAYMENT', 'payment', newId, { loanId, amount, paymentNumber });
   return NextResponse.json({ id: newId, payment_number: paymentNumber, status: 'pending', slip_path: slipPath }, { status: 201 });
+  } catch (err) {
+    console.error('POST /api/loan/payments error:', err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
