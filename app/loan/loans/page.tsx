@@ -124,10 +124,12 @@ export default function LoansPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Link href={`/loan/loans/${loan.id}`} className="text-slate-400 hover:text-white text-xs transition-colors">{t.loans.view}</Link>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/loan/loans/${loan.id}`} className="text-xs font-medium text-yellow-400 hover:text-yellow-300 transition-colors">ดูรายละเอียด</Link>
                         {user && ['admin', 'staff'].includes(user.role) && (
-                          <Link href={`/loan/loans/${loan.id}/edit`} className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors">{t.loans.edit}</Link>
+                          <Link href={`/loan/loans/${loan.id}/edit`} className="text-slate-500 hover:text-slate-300 transition-colors" title="แก้ไข">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          </Link>
                         )}
                         {user?.role === 'admin' && (
                           <button onClick={() => deleteLoan(loan.id)} disabled={deleting === loan.id}
@@ -196,9 +198,11 @@ export default function LoansPage() {
               );
             })()}
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
-              <Link href={`/loan/loans/${loan.id}`} className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium transition-colors">{t.loans.view}</Link>
+              <Link href={`/loan/loans/${loan.id}`} className="px-3 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-medium transition-colors">ดูรายละเอียด</Link>
               {user && ['admin', 'staff'].includes(user.role) && (
-                <Link href={`/loan/loans/${loan.id}/edit`} className="px-3 py-1.5 rounded-lg bg-yellow-500/15 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/30 text-xs font-medium transition-colors">{t.loans.edit}</Link>
+                <Link href={`/loan/loans/${loan.id}/edit`} className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors" title="แก้ไข">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                </Link>
               )}
               {user?.role === 'admin' && (
                 <button onClick={() => deleteLoan(loan.id)} disabled={deleting === loan.id}
