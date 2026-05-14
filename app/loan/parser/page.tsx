@@ -187,6 +187,16 @@ export default function ParserPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Auto-sync rows to DB whenever they change (skip on first empty mount)
+  const initialMount = useRef(true);
+  useEffect(() => {
+    if (initialMount.current) { initialMount.current = false; return; }
+    if (rows.length === 0) return;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); } catch { /* ignore */ }
+    syncToServer(rows, transferAmount);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows]);
+
   function parse() {
     const lines  = input.split('\n');
     const parsed: Row[]  = [];
