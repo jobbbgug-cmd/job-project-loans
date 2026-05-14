@@ -141,7 +141,7 @@ export default function LoanDetailPage() {
           <p className="text-slate-400 text-sm mt-0.5 truncate">{loan.customer_name} · {loan.customer_email}</p>
         </div>
         {user && ['admin', 'staff'].includes(user.role) && (
-          <Link href={`/loan/loans/${id}/edit`} className="bg-slate-600 hover:bg-slate-500 !text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 flex-shrink-0">
+          <Link href={`/loan/loans/${id}/edit`} className="bg-slate-500 hover:bg-slate-400 !text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 flex-shrink-0">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
             <span className="hidden sm:inline">{t.loanDetail.edit}</span>
           </Link>
@@ -456,35 +456,42 @@ export default function LoanDetailPage() {
             </div>
 
             {/* Mobile cards */}
-            <div className="md:hidden divide-y divide-slate-700/50">
+            <div className="md:hidden p-3 space-y-2">
               {schedule.map(row => {
                 const isPaid = row.status === 'paid';
                 const isOverdue = row.status === 'overdue';
+                const cardStyle = isPaid
+                  ? 'bg-emerald-500/8 border border-emerald-500/25 border-l-4 border-l-emerald-500'
+                  : isOverdue
+                  ? 'bg-red-500/8 border border-red-500/25 border-l-4 border-l-red-500'
+                  : 'bg-slate-800 border border-slate-700/60 border-l-4 border-l-slate-500';
                 return (
-                  <div key={row.id} className={`px-4 py-3.5 ${isOverdue ? 'bg-red-900/10' : ''}`}>
-                    <div className="flex items-center justify-between mb-2">
+                  <div key={row.id} className={`rounded-xl px-3 py-3 ${cardStyle}`}>
+                    <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2">
                         <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isPaid ? 'bg-emerald-500/20 text-emerald-400' : isOverdue ? 'bg-red-500/20 text-red-400' : 'bg-slate-700 text-slate-400'}`}>
                           {row.installment_no}
                         </span>
-                        <span className="text-slate-400 text-xs">{fmtDate(row.due_date)}</span>
+                        <div>
+                          <p className="text-slate-400 text-xs">{fmtDate(row.due_date)}</p>
+                          {row.paid_date && <p className="text-emerald-400/70 text-[10px]">จ่ายแล้ว {fmtDate(row.paid_date)}</p>}
+                        </div>
                       </div>
-                      <span className={`text-xs font-medium ${SCH_BADGE[row.status] ?? 'text-slate-400'}`}>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isPaid ? 'bg-emerald-500/15 text-emerald-400' : isOverdue ? 'bg-red-500/15 text-red-400' : 'bg-slate-700/60 text-slate-400'}`}>
                         {t.status[row.status as keyof typeof t.status] ?? row.status}
-                        {row.paid_date ? ` · ${fmtDate(row.paid_date)}` : ''}
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 ml-9">
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-700/40">
                       <div>
-                        <p className="text-slate-500 text-xs">{t.loanDetail.schedCols.principal}</p>
+                        <p className="text-slate-500 text-[10px] mb-0.5">{t.loanDetail.schedCols.principal}</p>
                         <p className="text-white text-sm font-medium">฿{fmt(Number(row.principal_component ?? 0))}</p>
                       </div>
                       <div>
-                        <p className="text-slate-500 text-xs">{t.loanDetail.schedCols.interest}</p>
+                        <p className="text-slate-500 text-[10px] mb-0.5">{t.loanDetail.schedCols.interest}</p>
                         <p className="text-yellow-400 text-sm font-medium">฿{fmt(Number(row.interest_component ?? 0))}</p>
                       </div>
                       <div>
-                        <p className="text-slate-500 text-xs">{t.loanDetail.schedCols.amount}</p>
+                        <p className="text-slate-500 text-[10px] mb-0.5">{t.loanDetail.schedCols.amount}</p>
                         <p className="text-white text-sm font-bold">฿{fmt(Number(row.amount ?? 0))}</p>
                       </div>
                     </div>
