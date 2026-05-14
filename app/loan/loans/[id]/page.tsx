@@ -464,12 +464,12 @@ export default function LoanDetailPage() {
                   ? 'bg-emerald-500/8 border border-emerald-500/25 border-l-4 border-l-emerald-500'
                   : isOverdue
                   ? 'bg-red-500/8 border border-red-500/25 border-l-4 border-l-red-500'
-                  : 'bg-slate-800 border border-slate-700/60 border-l-4 border-l-slate-500';
+                  : 'bg-yellow-500/6 border border-yellow-500/30 border-l-4 border-l-yellow-500';
                 return (
                   <div key={row.id} className={`rounded-xl px-3 py-3 ${cardStyle}`}>
                     <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2">
-                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isPaid ? 'bg-emerald-500/20 text-emerald-400' : isOverdue ? 'bg-red-500/20 text-red-400' : 'bg-slate-700 text-slate-400'}`}>
+                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isPaid ? 'bg-emerald-500/20 text-emerald-400' : isOverdue ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
                           {row.installment_no}
                         </span>
                         <div>
@@ -477,11 +477,11 @@ export default function LoanDetailPage() {
                           {row.paid_date && <p className="text-emerald-400/70 text-[10px]">จ่ายแล้ว {fmtDate(row.paid_date)}</p>}
                         </div>
                       </div>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isPaid ? 'bg-emerald-500/15 text-emerald-400' : isOverdue ? 'bg-red-500/15 text-red-400' : 'bg-slate-700/60 text-slate-400'}`}>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isPaid ? 'bg-emerald-500/15 text-emerald-400' : isOverdue ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'}`}>
                         {t.status[row.status as keyof typeof t.status] ?? row.status}
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-700/40">
+                    <div className={`grid grid-cols-3 gap-2 pt-2 border-t ${isPaid ? 'border-emerald-500/20' : isOverdue ? 'border-red-500/20' : 'border-yellow-500/20'}`}>
                       <div>
                         <p className="text-slate-500 text-[10px] mb-0.5">{t.loanDetail.schedCols.principal}</p>
                         <p className="text-white text-sm font-medium">฿{fmt(Number(row.principal_component ?? 0))}</p>
