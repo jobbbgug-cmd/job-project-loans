@@ -109,10 +109,10 @@ export default function PaymentsPage() {
           return (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded-xl py-2.5 px-1 text-center transition-all ${isActive ? activeColor : inactiveColor}`}>
-              <div className={`text-[10px] font-medium mb-1 leading-tight ${isActive ? 'text-white' : labelColor}`}>
+              <div className={`text-[10px] font-medium mb-1 leading-tight ${isActive ? '!text-white' : labelColor}`}>
                 {s === '' ? t.loans.all : (PAY_STATUS_LABEL[s] ?? s)}
               </div>
-              <div className={`text-base font-bold ${isActive ? 'text-white' : numColor}`}>
+              <div className={`text-base font-bold ${isActive ? '!text-white' : numColor}`}>
                 {count}
               </div>
             </button>
