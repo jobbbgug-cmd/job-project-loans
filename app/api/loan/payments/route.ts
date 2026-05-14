@@ -103,13 +103,15 @@ export async function POST(request: NextRequest) {
   if (loan.term_months === 0 && !scheduleId) {
     const count = await db.collection('payment_schedule').countDocuments({ loan_id: Number(loanId) });
     const schedId = await nextId('payment_schedule');
+    const principalComp = paymentType === 'interest' ? 0 : Number(amount);
+    const interestComp  = paymentType === 'interest' ? Number(amount) : 0;
     await db.collection('payment_schedule').insertOne({
       id: schedId,
       loan_id: Number(loanId),
       installment_no: count + 1,
       due_date: paymentDate,
-      principal_component: Number(amount),
-      interest_component: 0,
+      principal_component: principalComp,
+      interest_component: interestComp,
       due_amount: Number(amount),
       outstanding_balance: 0,
       status: 'pending',
