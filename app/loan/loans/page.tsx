@@ -70,22 +70,23 @@ export default function LoansPage() {
         {statuses.map(s => {
           const count = s === '' ? loans.length : loans.filter(l => l.status === s).length;
           const isActive = filter === s;
+          const activeColor = s === 'completed' ? 'bg-emerald-600' : 'bg-yellow-600';
+          const inactiveColor = s === 'completed' ? 'bg-emerald-500/10 border border-emerald-500/30'
+            : s === 'pending' ? 'bg-yellow-500/10 border border-yellow-500/30'
+            : 'bg-slate-800 border border-slate-700';
+          const numColor = s === 'completed' ? 'text-emerald-400'
+            : s === 'pending' ? 'text-yellow-400'
+            : 'text-white';
+          const labelColor = s === 'completed' ? 'text-emerald-400'
+            : s === 'pending' ? 'text-yellow-400'
+            : 'text-slate-400';
           return (
             <button key={s} onClick={() => setFilter(s)}
-              className={`rounded-xl p-3 text-center transition-colors ${
-                isActive
-                  ? s === 'completed' ? 'bg-emerald-600' : 'bg-yellow-600'
-                  : 'bg-slate-800 border border-slate-700'
-              }`}>
-              <div className={`text-xs font-medium mb-1 ${isActive ? 'text-white' : 'text-slate-400'}`}>
+              className={`rounded-xl p-3 text-center transition-all ${isActive ? activeColor : inactiveColor}`}>
+              <div className={`text-xs font-medium mb-1 ${isActive ? '!text-white' : labelColor}`}>
                 {s === '' ? t.loans.all : (t.status[s as keyof typeof t.status] ?? s)}
               </div>
-              <div className={`text-xl font-bold ${
-                isActive ? 'text-white'
-                : s === 'completed' ? 'text-emerald-400'
-                : s === '' ? 'text-white'
-                : 'text-yellow-400'
-              }`}>
+              <div className={`text-xl font-bold ${isActive ? '!text-white' : numColor}`}>
                 {count}
               </div>
             </button>
@@ -117,7 +118,7 @@ export default function LoansPage() {
                     <td className="px-4 py-3 text-slate-300">{loan.interest_rate}%</td>
                     <td className="px-4 py-3 text-slate-300">{loan.term_months} {t.loanDetail.months}</td>
                     <td className="px-4 py-3 text-white">฿{fmt(loan.monthly_payment)}</td>
-                    <td className="px-4 py-3 text-blue-400">฿{fmt(Number(loan.paid_amount))}</td>
+                    <td className="px-4 py-3 text-emerald-400">฿{fmt(Number(loan.paid_amount))}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_BADGE[loan.status]}`}>
                         {t.status[loan.status as keyof typeof t.status] ?? loan.status}
@@ -179,7 +180,7 @@ export default function LoansPage() {
               </div>
               <div>
                 <div className="text-slate-500 text-xs">{t.loans.cols.paid}</div>
-                <div className="text-blue-400">฿{fmt(Number(loan.paid_amount))}</div>
+                <div className="text-emerald-400">฿{fmt(Number(loan.paid_amount))}</div>
               </div>
             </div>
             {/* Progress bar */}
