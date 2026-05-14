@@ -91,10 +91,10 @@ export default function UsersPage() {
           return (
             <button key={r} onClick={() => setFilterRole(r)}
               className={`rounded-xl p-3 text-center transition-colors ${isActive ? activeColor : 'bg-slate-800 border border-slate-700'}`}>
-              <div className={`text-xs font-medium mb-1 ${isActive ? 'text-white' : 'text-slate-400'}`}>
+              <div className={`text-xs font-medium mb-1 ${isActive ? '!text-white' : 'text-slate-400'}`}>
                 {r === '' ? t.users.allRoles : (t.status[r as keyof typeof t.status] ?? r)}
               </div>
-              <div className={`text-xl font-bold ${isActive ? 'text-white' : numColor}`}>
+              <div className={`text-xl font-bold ${isActive ? '!text-white' : numColor}`}>
                 {count}
               </div>
             </button>

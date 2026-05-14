@@ -869,7 +869,7 @@ export default function ParserPage() {
                   <button
                     onClick={() => setConfirmArchive(true)}
                     disabled={!archiveReady}
-                    className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-900 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                    className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed !text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
                     สรุปผลประจำวัน
@@ -896,7 +896,7 @@ export default function ParserPage() {
                   <button
                     onClick={archiveSession}
                     disabled={archiving}
-                    className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 text-slate-900 px-5 py-2 rounded-xl text-sm font-bold transition-colors"
+                    className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 !text-white px-5 py-2 rounded-xl text-sm font-bold transition-colors"
                   >
                     {archiving ? 'กำลังบันทึก...' : 'ยืนยัน — บันทึกและล้างข้อมูล'}
                   </button>
