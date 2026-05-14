@@ -94,14 +94,22 @@ export default function PaymentsPage() {
             : s === 'rejected' ? 'bg-red-600'
             : s === 'pending' ? 'bg-yellow-600'
             : 'bg-slate-600';
+          const inactiveColor = s === 'approved' ? 'bg-emerald-500/10 border border-emerald-500/30'
+            : s === 'rejected' ? 'bg-red-500/10 border border-red-500/30'
+            : s === 'pending' ? 'bg-yellow-500/10 border border-yellow-500/30'
+            : 'bg-slate-800 border border-slate-700';
           const numColor = s === 'approved' ? 'text-emerald-400'
             : s === 'rejected' ? 'text-red-400'
             : s === 'pending' ? 'text-yellow-400'
             : 'text-white';
+          const labelColor = s === 'approved' ? 'text-emerald-400'
+            : s === 'rejected' ? 'text-red-400'
+            : s === 'pending' ? 'text-yellow-400'
+            : 'text-slate-400';
           return (
             <button key={s} onClick={() => setFilter(s)}
-              className={`rounded-xl py-2.5 px-1 text-center transition-colors ${isActive ? activeColor : 'bg-slate-800 border border-slate-700'}`}>
-              <div className={`text-[10px] font-medium mb-1 leading-tight ${isActive ? 'text-white' : 'text-slate-400'}`}>
+              className={`rounded-xl py-2.5 px-1 text-center transition-all ${isActive ? activeColor : inactiveColor}`}>
+              <div className={`text-[10px] font-medium mb-1 leading-tight ${isActive ? 'text-white' : labelColor}`}>
                 {s === '' ? t.loans.all : (PAY_STATUS_LABEL[s] ?? s)}
               </div>
               <div className={`text-base font-bold ${isActive ? 'text-white' : numColor}`}>
@@ -187,8 +195,13 @@ export default function PaymentsPage() {
           const hasPending = g.payments.some(p => p.status === 'pending');
           const badgeStatus = filter || (hasPending ? 'pending' : g.payments[0]?.status ?? '');
 
+          const cardAccent = hasPending ? 'border-l-yellow-400'
+            : g.payments.every(p => p.status === 'approved') ? 'border-l-emerald-400'
+            : g.payments.some(p => p.status === 'rejected') ? 'border-l-red-400'
+            : 'border-l-slate-500';
+
           return (
-            <div key={g.loan_id} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <div key={g.loan_id} className={`bg-slate-800 rounded-xl border border-slate-700 border-l-4 ${cardAccent} overflow-hidden`}>
               {/* Card header */}
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
@@ -243,7 +256,7 @@ export default function PaymentsPage() {
               {isOpen && (
                 <div className="border-t border-slate-700 divide-y divide-slate-700/50">
                   {visiblePayments.map(p => (
-                    <div key={p.id} className="px-4 py-3 flex items-center gap-3">
+                    <div key={p.id} className="px-4 py-3 flex items-center gap-3 hover:bg-slate-700/30 transition-colors">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-white text-sm font-medium">฿{fmt(Number(p.amount))}</span>
