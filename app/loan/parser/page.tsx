@@ -462,11 +462,22 @@ export default function ParserPage() {
       const hasSummary = rows.some(r => r.result);
       txt(hasSummary ? sumSummary.toLocaleString('th-TH', {maximumFractionDigits:2}) : '—', spanW + cols[9].width - pad, fy + footH / 2, hasSummary ? (sumSummary > 0 ? '#10b981' : '#ef4444') : '#475569', 12, true, 'right');
 
-      // ── Download ──────────────────────────────────────────────────────────
-      const link = document.createElement('a');
-      link.download = `parser-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      // ── Save / Share ──────────────────────────────────────────────────────
+      const filename = `parser-${new Date().toISOString().slice(0, 10)}.png`;
+      if (typeof navigator.share === 'function') {
+        // iOS / mobile — use Web Share API so user can save to Photos
+        const blob = await new Promise<Blob>((resolve, reject) =>
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
+        );
+        const file = new File([blob], filename, { type: 'image/png' });
+        await navigator.share({ files: [file], title: filename });
+      } else {
+        // Desktop fallback
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
     } catch (err) {
       console.error('saveAsImage:', err);
     } finally {
