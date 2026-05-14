@@ -302,12 +302,18 @@ export default function ParserPage() {
   }
 
   function clearAll() {
+    if (!confirm('ล้างข้อมูลทั้งหมด? ข้อมูลจะถูกลบออกจากทุกอุปกรณ์')) return;
     setRows([]);
     setErrors([]);
     setEditingIdx(null);
     setSaved(false);
     setNewCount(0);
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    setTransferAmount('');
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY + '_transfer');
+    } catch { /* ignore */ }
+    fetch('/api/loan/parser-draft', { method: 'DELETE' }).catch(() => {});
   }
 
   async function fetchLineMessages() {
