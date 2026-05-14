@@ -46,12 +46,44 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const payment = await db.collection('payments').findOne({ id: Number(id) });
   if (!payment) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // Revert side-effects if payment was approved
+  if (payment.status === 'approved') {
+    // Decrement loan paid_amount
+    await db.collection('loans').updateOne(
+      { id: payment.loan_id as number },
+      { $inc: { paid_amount: -(payment.amount as number) } }
+    );
+    // Revert loan status if it was auto-completed
+    const loan = await db.collection('loans').findOne({ id: payment.loan_id as number });
+    if (loan && loan.status === 'completed' && Number(loan.total_payment) > 0) {
+      await db.collection('loans').updateOne(
+        { id: loan.id as number },
+        { $set: { status: 'active' } }
+      );
+    }
+    // Revert schedule entry back to pending
+    if (payment.schedule_id) {
+      await db.collection('payment_schedule').updateOne(
+        { id: payment.schedule_id as number },
+        { $set: { status: 'pending', paid_date: null } }
+      );
+    }
+  }
+
+  // Delete auto-created schedule entry for open-ended loans
+  if (payment.schedule_id) {
+    const loan = await db.collection('loans').findOne({ id: payment.loan_id as number });
+    if (loan && Number(loan.term_months) === 0) {
+      await db.collection('payment_schedule').deleteOne({ id: payment.schedule_id as number });
+    }
+  }
+
   if (payment.slip_path) {
     const { del } = await import('@vercel/blob');
     await del(payment.slip_path as string).catch(() => {});
   }
 
   await db.collection('payments').deleteOne({ id: Number(id) });
-  await audit(user.userId, 'DELETE_PAYMENT', 'payment', Number(id), {});
+  await audit(user.userId, 'DELETE_PAYMENT', 'payment', Number(id), { wasApproved: payment.status === 'approved' });
   return NextResponse.json({ success: true });
 }
