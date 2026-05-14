@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ThaiDatePicker from '@/components/ThaiDatePicker';
 
 interface Row {
@@ -146,13 +146,45 @@ export default function ParserPage() {
   const [savingImage, setSavingImage] = useState(false);
   const [fetchingLine, setFetchingLine] = useState(false);
   const [lineMsg, setLineMsg] = useState<string | null>(null);
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount; if empty, fall back to server draft
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setRows(JSON.parse(stored) as Row[]);
-    } catch { /* ignore */ }
+    async function loadDraft() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        const storedTransfer = localStorage.getItem(STORAGE_KEY + '_transfer');
+        if (stored) {
+          const localRows = JSON.parse(stored) as Row[];
+          setRows(localRows);
+          if (storedTransfer) setTransferAmount(storedTransfer);
+          // push local data to server so other devices can see it
+          fetch('/api/loan/parser-draft', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rows: localRows, transfer_amount: storedTransfer ?? '' }),
+          }).catch(() => {});
+          return;
+        }
+      } catch { /* ignore */ }
+      // localStorage empty — try server draft
+      try {
+        const res = await fetch('/api/loan/parser-draft');
+        if (res.ok) {
+          const draft = await res.json();
+          if (draft && Array.isArray(draft.rows) && draft.rows.length > 0) {
+            setRows(draft.rows);
+            if (draft.transfer_amount) setTransferAmount(draft.transfer_amount);
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(draft.rows));
+              if (draft.transfer_amount) localStorage.setItem(STORAGE_KEY + '_transfer', draft.transfer_amount);
+            } catch { /* ignore */ }
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    loadDraft();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function parse() {
@@ -196,8 +228,23 @@ export default function ParserPage() {
     setTimeout(() => setMatchMsg(null), 3000);
   }
 
+  function syncToServer(r: Row[], transfer: string) {
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => {
+      fetch('/api/loan/parser-draft', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: r, transfer_amount: transfer }),
+      }).catch(() => {});
+    }, 1500);
+  }
+
   function saveToStorage() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+      localStorage.setItem(STORAGE_KEY + '_transfer', transferAmount);
+    } catch { /* ignore */ }
+    syncToServer(rows, transferAmount);
     setSaved(true);
     setNewCount(0);
     setTimeout(() => setSaved(false), 2000);
@@ -226,7 +273,11 @@ export default function ParserPage() {
         setTransferAmount('');
         setConfirmArchive(false);
         setArchiveError('');
-        try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(STORAGE_KEY + '_transfer');
+        } catch { /* ignore */ }
+        fetch('/api/loan/parser-draft', { method: 'DELETE' }).catch(() => {});
       } else {
         const data = await res.json().catch(() => ({}));
         setArchiveError(data.error || `บันทึกไม่สำเร็จ (${res.status})`);
