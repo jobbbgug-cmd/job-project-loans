@@ -7,7 +7,16 @@ import { useLang } from '@/contexts/LangContext';
 import { useToast } from '@/contexts/ToastContext';
 import { blobProxy } from '@/lib/blob-url';
 
-interface Payment { id: number; payment_number: string | null; loan_number: string; loan_id: number; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; is_late: boolean; created_at: string; verified_at: string | null; verifier_name: string | null; rejection_reason: string | null; }
+interface Payment { id: number; payment_number: string | null; loan_number: string; loan_id: number; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; is_late: boolean; created_at: string; verified_at: string | null; verifier_name: string | null; rejection_reason: string | null; payment_type?: string; }
+
+const PTYPE_BADGE: Record<string, string> = {
+  principal: 'bg-emerald-500/20 text-emerald-400',
+  interest:  'bg-blue-500/20 text-blue-400',
+  normal:    'bg-slate-500/20 text-slate-400',
+};
+const PTYPE_LABEL: Record<string, string> = {
+  principal: 'เงินต้น', interest: 'ดอกเบี้ย', normal: 'ชำระปกติ',
+};
 interface User { role: string; }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -82,6 +91,9 @@ export default function PaymentDetailPage() {
 
       <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 space-y-4">
         <div className="flex items-center justify-end gap-2 -mt-1 mb-1">
+          <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${PTYPE_BADGE[payment.payment_type ?? 'normal'] ?? PTYPE_BADGE.normal}`}>
+            {PTYPE_LABEL[payment.payment_type ?? 'normal'] ?? 'ชำระปกติ'}
+          </span>
           <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${STATUS_BADGE[payment.status]}`}>
             {t.status[payment.status as keyof typeof t.status] ?? payment.status}
           </span>

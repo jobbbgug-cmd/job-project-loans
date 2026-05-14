@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
   const scheduleId  = formData.get('schedule_id') as string | null;
   const amount      = formData.get('amount') as string;
   const paymentDate = formData.get('payment_date') as string;
+  const paymentType = (formData.get('payment_type') as string | null) ?? 'normal';
   const notes       = formData.get('notes') as string | null;
   const slip        = formData.get('slip') as File | null;
 
@@ -134,6 +135,7 @@ export async function POST(request: NextRequest) {
     paid_by: user.userId,
     amount: Number(amount),
     payment_date: paymentDate,
+    payment_type: paymentType,
     slip_filename: slipFilename,
     slip_path: slipPath,
     notes: notes ?? null,

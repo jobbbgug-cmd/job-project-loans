@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -10,7 +10,7 @@ import { blobProxy } from '@/lib/blob-url';
 interface Loan { id: number; loan_number: string; customer_name: string; customer_email: string; principal: number; interest_rate: number; term_months: number; monthly_payment: number; status: string; start_date: string; paid_amount: number; purpose: string; notes: string; created_at: string; }
 interface Schedule { id: number; installment_no: number; due_date: string; principal_component: number; interest_component: number; amount: number; remaining_balance: number; status: string; paid_date: string | null; }
 interface Document { id: number; file_name: string; file_path: string; created_at: string; uploaded_by_name: string; }
-interface Payment { id: number; payment_number: string | null; amount: number; payment_date: string; note: string; status: string; verifier_name: string | null; installment_no: number | null; due_date: string | null; slip_path: string | null; created_at: string; }
+interface Payment { id: number; payment_number: string | null; amount: number; payment_date: string; note: string; status: string; verifier_name: string | null; installment_no: number | null; due_date: string | null; slip_path: string | null; created_at: string; payment_type?: string; }
 interface User { role: string; }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -24,12 +24,20 @@ const SCH_BADGE: Record<string, string> = {
 
 const IMAGE_EXT = /\.(jpg|jpeg|png|gif|webp)$/i;
 
+const PTYPE_BADGE: Record<string, string> = {
+  principal: 'bg-emerald-500/20 text-emerald-400',
+  interest:  'bg-blue-500/20 text-blue-400',
+  normal:    'bg-slate-500/20 text-slate-400',
+};
+const PTYPE_LABEL: Record<string, string> = {
+  principal: 'เงินต้น', interest: 'ดอกเบี้ย', normal: 'ชำระปกติ',
+};
+
 function fmt(n: number | null | undefined) { return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n ?? 0); }
 function fmtDate(s: string) { return new Date(s).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }); }
 
 export default function LoanDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const { t } = useLang();
   const { showToast } = useToast();
@@ -40,9 +48,7 @@ export default function LoanDetailPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [acting, setActing] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
 
   async function safeJson(r: Response) {
@@ -72,16 +78,6 @@ export default function LoanDetailPage() {
     });
   }, [id]);
 
-  async function doAction(action: 'approve' | 'reject') {
-    setActing(true); setError('');
-    const res = await fetch(`/api/loan/loans/${id}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
-    const data = await safeJson(res);
-    if (!res.ok) { setError(data.error || t.loanDetail.failed); setActing(false); return; }
-    showToast('บันทึกสำเร็จ');
-    router.refresh();
-    const [l, s] = await Promise.all([fetch(`/api/loan/loans/${id}`).then(safeJson), fetch(`/api/loan/loans/${id}/schedule`).then(safeJson)]);
-    setLoan(l); setSchedule(Array.isArray(s) ? s : []); setActing(false);
-  }
 
   async function uploadFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -147,8 +143,6 @@ export default function LoanDetailPage() {
           </Link>
         )}
       </div>
-
-      {error && <div className="bg-red-900/40 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3">{error}</div>}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -326,6 +320,7 @@ export default function LoanDetailPage() {
               <thead>
                 <tr className="border-b border-slate-700 text-slate-400 text-xs">
                   <th className="px-4 py-3 text-left font-medium">เลขที่การชำระเงิน</th>
+                  <th className="px-4 py-3 text-left font-medium">ประเภท</th>
                   <th className="px-4 py-3 text-left font-medium">งวดที่</th>
                   <th className="px-4 py-3 text-left font-medium">วันที่ชำระ</th>
                   <th className="px-4 py-3 text-right font-medium">จำนวนเงิน</th>
@@ -340,6 +335,11 @@ export default function LoanDetailPage() {
                 {payments.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-700/30 transition-colors">
                     <td className="px-4 py-3 text-blue-400 font-mono text-xs">{p.payment_number ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${PTYPE_BADGE[p.payment_type ?? 'normal'] ?? PTYPE_BADGE.normal}`}>
+                        {PTYPE_LABEL[p.payment_type ?? 'normal'] ?? 'ชำระปกติ'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-slate-300">{p.installment_no ? `งวด ${p.installment_no}` : '—'}</td>
                     <td className="px-4 py-3 text-white">{fmtDate(p.payment_date)}</td>
                     <td className="px-4 py-3 text-right text-yellow-400 font-mono font-semibold">฿{fmt(Number(p.amount))}</td>
@@ -361,7 +361,7 @@ export default function LoanDetailPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-slate-600 bg-slate-700/30 font-semibold text-sm">
-                  <td colSpan={3} className="px-4 py-3 text-slate-400">รวม</td>
+                  <td colSpan={4} className="px-4 py-3 text-slate-400">รวม</td>
                   <td className="px-4 py-3 text-right text-yellow-400 font-mono">฿{fmt(payments.filter(p => p.status === 'approved').reduce((s, p) => s + Number(p.amount), 0))}</td>
                   <td colSpan={5}></td>
                 </tr>
@@ -380,7 +380,10 @@ export default function LoanDetailPage() {
                       {p.installment_no ? `งวด ${p.installment_no} · ` : ''}{fmtDate(p.payment_date)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${PTYPE_BADGE[p.payment_type ?? 'normal'] ?? PTYPE_BADGE.normal}`}>
+                      {PTYPE_LABEL[p.payment_type ?? 'normal'] ?? 'ชำระปกติ'}
+                    </span>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_BADGE[p.status] ?? 'bg-slate-500/20 text-slate-400'}`}>
                       {t.status[p.status as keyof typeof t.status] ?? p.status}
                     </span>

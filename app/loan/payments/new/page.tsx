@@ -21,7 +21,7 @@ export default function NewPaymentPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isOpenEnded, setIsOpenEnded] = useState(false);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
-  const [form, setForm] = useState({ loan_id: searchParams.get('loan_id') || '', schedule_id: '', amount: '', payment_date: new Date().toISOString().slice(0, 10), notes: '' });
+  const [form, setForm] = useState({ loan_id: searchParams.get('loan_id') || '', schedule_id: '', amount: '', payment_date: new Date().toISOString().slice(0, 10), notes: '', payment_type: 'normal' });
   const [slip, setSlip] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -92,6 +92,7 @@ export default function NewPaymentPage() {
       if (form.schedule_id) fd.append('schedule_id', form.schedule_id);
       fd.append('amount', form.amount);
       fd.append('payment_date', form.payment_date);
+      fd.append('payment_type', form.payment_type);
       fd.append('notes', form.notes);
       if (slip) fd.append('slip', slip);
       const res = await fetch('/api/loan/payments', { method: 'POST', body: fd });
@@ -132,6 +133,22 @@ export default function NewPaymentPage() {
                 </option>
               ))}
           </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">ประเภทการชำระ</label>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { value: 'normal',   label: 'ชำระปกติ', active: 'bg-yellow-600 !text-white',  inactive: 'bg-slate-700 text-slate-400 hover:text-white' },
+              { value: 'principal', label: 'เงินต้น',  active: 'bg-emerald-600 !text-white', inactive: 'bg-slate-700 text-slate-400 hover:text-white' },
+              { value: 'interest', label: 'ดอกเบี้ย', active: 'bg-blue-600 !text-white',    inactive: 'bg-slate-700 text-slate-400 hover:text-white' },
+            ] as const).map(opt => (
+              <button key={opt.value} type="button" onClick={() => set('payment_type', opt.value)}
+                className={`py-2 rounded-lg text-sm font-medium transition-colors ${form.payment_type === opt.value ? opt.active : opt.inactive}`}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {isOpenEnded ? (
