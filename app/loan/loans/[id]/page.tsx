@@ -192,16 +192,16 @@ export default function LoanDetailPage() {
             </div>
           )}
           <div className={`grid gap-3 ${user?.role === 'customer' ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            <div className="bg-slate-700/50 rounded-xl p-3.5">
-              <p className="text-slate-400 text-xs mb-1">เงินต้นที่จ่ายแล้ว</p>
-              <p className="text-white font-bold text-base font-mono">฿{fmt(principalPaid)}</p>
+            <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-3.5">
+              <p className="text-emerald-400/70 text-xs mb-1">เงินต้นที่จ่ายแล้ว</p>
+              <p className="text-emerald-400 font-bold text-base font-mono">฿{fmt(principalPaid)}</p>
               {loan.principal > 0 && (
-                <p className="text-slate-500 text-xs mt-0.5">จาก ฿{fmt(loan.principal)}</p>
+                <p className="text-emerald-400/50 text-xs mt-0.5">จาก ฿{fmt(loan.principal)}</p>
               )}
             </div>
             {user?.role !== 'customer' && (
-              <div className="bg-slate-700/50 rounded-xl p-3.5">
-                <p className="text-slate-400 text-xs mb-1">ดอกเบี้ยที่จ่ายแล้ว</p>
+              <div className="bg-yellow-500/15 border border-yellow-500/30 rounded-xl p-3.5">
+                <p className="text-yellow-400/70 text-xs mb-1">ดอกเบี้ยที่จ่ายแล้ว</p>
                 <p className="text-yellow-400 font-bold text-base font-mono">฿{fmt(interestPaid)}</p>
               </div>
             )}
