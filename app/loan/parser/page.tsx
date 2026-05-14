@@ -147,6 +147,36 @@ export default function ParserPage() {
   const [fetchingLine, setFetchingLine] = useState(false);
   const [lineMsg, setLineMsg] = useState<string | null>(null);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debugMsg, setDebugMsg] = useState<string | null>(null);
+
+  async function loadDraftFromServer() {
+    setDebugMsg('กำลังโหลดจาก server...');
+    try {
+      const res = await fetch('/api/loan/parser-draft');
+      const text = await res.text();
+      if (!res.ok) {
+        setDebugMsg(`Server error ${res.status}: ${text.slice(0, 100)}`);
+        return false;
+      }
+      const draft = JSON.parse(text);
+      if (draft && Array.isArray(draft.rows) && draft.rows.length > 0) {
+        setRows(draft.rows);
+        if (draft.transfer_amount) setTransferAmount(draft.transfer_amount);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(draft.rows));
+          if (draft.transfer_amount) localStorage.setItem(STORAGE_KEY + '_transfer', draft.transfer_amount);
+        } catch { /* ignore */ }
+        setDebugMsg(`โหลดจาก server สำเร็จ: ${draft.rows.length} รายการ`);
+        return true;
+      } else {
+        setDebugMsg(`Server draft ว่าง (draft=${JSON.stringify(draft)?.slice(0, 80)})`);
+        return false;
+      }
+    } catch (e) {
+      setDebugMsg(`Fetch error: ${String(e)}`);
+      return false;
+    }
+  }
 
   // Load from localStorage on mount; if empty, fall back to server draft
   useEffect(() => {
@@ -158,30 +188,17 @@ export default function ParserPage() {
           const localRows = JSON.parse(stored) as Row[];
           setRows(localRows);
           if (storedTransfer) setTransferAmount(storedTransfer);
-          // push local data to server so other devices can see it
-          fetch('/api/loan/parser-draft', {
+          setDebugMsg(`โหลดจาก localStorage: ${localRows.length} รายการ — กำลัง sync ขึ้น server...`);
+          const putRes = await fetch('/api/loan/parser-draft', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ rows: localRows, transfer_amount: storedTransfer ?? '' }),
-          }).catch(() => {});
+          });
+          setDebugMsg(`localStorage: ${localRows.length} รายการ | sync server: ${putRes.ok ? 'OK' : putRes.status}`);
           return;
         }
       } catch { /* ignore */ }
-      // localStorage empty — try server draft
-      try {
-        const res = await fetch('/api/loan/parser-draft');
-        if (res.ok) {
-          const draft = await res.json();
-          if (draft && Array.isArray(draft.rows) && draft.rows.length > 0) {
-            setRows(draft.rows);
-            if (draft.transfer_amount) setTransferAmount(draft.transfer_amount);
-            try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(draft.rows));
-              if (draft.transfer_amount) localStorage.setItem(STORAGE_KEY + '_transfer', draft.transfer_amount);
-            } catch { /* ignore */ }
-          }
-        }
-      } catch { /* ignore */ }
+      await loadDraftFromServer();
     }
     loadDraft();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -523,6 +540,19 @@ export default function ParserPage() {
             วางข้อมูลในรูปแบบ <span className="font-mono text-yellow-400">ชื่อ ราคาต่อ/ราคาน้ำ(สกอร์)</span> ทีละบรรทัด
           </p>
         </div>
+
+        {/* Debug status */}
+        {debugMsg && (
+          <div className="flex items-center gap-3 bg-slate-800 border border-slate-600 rounded-xl px-4 py-3">
+            <span className="text-slate-300 text-xs flex-1">{debugMsg}</span>
+            <button
+              onClick={loadDraftFromServer}
+              className="text-xs bg-blue-600 hover:bg-blue-500 !text-white px-3 py-1.5 rounded-lg transition-colors flex-shrink-0"
+            >
+              โหลดจาก Server
+            </button>
+          </div>
+        )}
 
         {/* Two input boxes side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
