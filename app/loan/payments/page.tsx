@@ -72,10 +72,10 @@ export default function PaymentsPage() {
       {/* Desktop filter buttons */}
       <div className="hidden md:flex gap-2 flex-wrap">
         {statuses.map(s => {
-          const activeClass = s === 'approved' ? 'bg-emerald-600 text-white'
-            : s === 'rejected' ? 'bg-red-600 text-white'
-            : s === 'pending' ? 'bg-yellow-600 text-white'
-            : 'bg-slate-600 text-white';
+          const activeClass = s === 'approved' ? 'bg-emerald-600 !text-white'
+            : s === 'rejected' ? 'bg-red-600 !text-white'
+            : s === 'pending' ? 'bg-yellow-600 !text-white'
+            : 'bg-slate-600 !text-white';
           return (
             <button key={s} onClick={() => setFilter(s)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === s ? activeClass : 'bg-slate-700 text-slate-400 hover:text-white'}`}>

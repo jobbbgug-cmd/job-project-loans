@@ -62,10 +62,10 @@ export default function UsersPage() {
       {/* Desktop filter buttons */}
       <div className="hidden md:flex gap-2">
         {roleFilters.map(r => {
-          const activeClass = r === 'admin' ? 'bg-purple-600 text-white'
-            : r === 'staff' ? 'bg-blue-600 text-white'
-            : r === 'customer' ? 'bg-yellow-600 text-white'
-            : 'bg-slate-500 text-white';
+          const activeClass = r === 'admin' ? 'bg-purple-600 !text-white'
+            : r === 'staff' ? 'bg-blue-600 !text-white'
+            : r === 'customer' ? 'bg-yellow-600 !text-white'
+            : 'bg-slate-500 !text-white';
           return (
             <button key={r} onClick={() => setFilterRole(r)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filterRole === r ? activeClass : 'bg-slate-700 text-slate-400 hover:text-white'}`}>

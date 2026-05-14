@@ -59,7 +59,7 @@ export default function LoansPage() {
       <div className="hidden md:flex gap-2 flex-wrap">
         {statuses.map(s => (
           <button key={s} onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === s ? (s === 'completed' ? 'bg-emerald-600 text-white' : 'bg-yellow-600 text-white') : 'bg-slate-700 text-slate-400 hover:text-white'}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === s ? (s === 'completed' ? 'bg-emerald-600 !text-white' : 'bg-yellow-600 !text-white') : 'bg-slate-700 text-slate-400 hover:text-white'}`}>
             {s === '' ? t.loans.all : (t.status[s as keyof typeof t.status] ?? s)}
           </button>
         ))}
