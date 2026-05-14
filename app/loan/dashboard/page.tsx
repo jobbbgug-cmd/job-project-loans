@@ -158,7 +158,7 @@ export default function DashboardPage() {
               <div className="relative flex justify-center mb-5">
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={88} dataKey="value" strokeWidth={3} stroke="#1e293b">
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={88} dataKey="value" strokeWidth={0}>
                       {pieData.map((entry, i) => <Cell key={i} fill={STATUS_COLORS[entry.origStatus] ?? '#6b7280'} />)}
                     </Pie>
                     <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8 }} labelStyle={{ color: '#fff' }} />
