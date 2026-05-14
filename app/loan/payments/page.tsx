@@ -265,7 +265,7 @@ export default function PaymentsPage() {
                         <div className="text-slate-400 text-xs mt-0.5">{fmtDate(p.payment_date)}</div>
                       </div>
                       <Link href={`/loan/payments/${p.id}`}
-                        className="px-2.5 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-xs font-medium flex-shrink-0 transition-colors">
+                        className="px-2.5 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 !text-white text-xs font-medium flex-shrink-0 transition-colors">
                         ดูรายละเอียด
                       </Link>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${STATUS_BADGE[p.status]}`}>
