@@ -1,7 +1,7 @@
 export type Lang = 'en' | 'th';
 
 export interface T {
-  nav: { dashboard: string; loans: string; payments: string; customers: string; users: string; parser: string };
+  nav: { dashboard: string; loans: string; payments: string; tracking: string; customers: string; users: string; parser: string };
   logout: string;
   login: { subtitle: string; email: string; password: string; signIn: string; signingIn: string; defaultCreds: string; loginFailed: string };
   dashboard: { title: string; subtitle: string; totalLoans: string; active: string; totalPrincipal: string; totalCollected: string; payments: string; outstandingBalance: string; pendingPayments: string; awaitingVerification: string; overdueInstallments: string; monthlyCollections: string; noData: string; loanStatusDist: string };
@@ -19,7 +19,7 @@ export interface T {
 }
 
 const en: T = {
-  nav: { dashboard: 'Dashboard', loans: 'Loans', payments: 'Payments', customers: 'Customers', users: 'Users', parser: 'Parser' },
+  nav: { dashboard: 'Dashboard', loans: 'Loans', payments: 'Payments', tracking: 'Tracking', customers: 'Customers', users: 'Users', parser: 'Parser' },
   logout: 'Logout',
   login: { subtitle: 'Loan Management System', email: 'Email', password: 'Password', signIn: 'Sign in', signingIn: 'Signing in…', defaultCreds: 'Default: admin@loanapp.com / Admin@1234', loginFailed: 'Login failed' },
   dashboard: { title: 'Dashboard', subtitle: 'Loan management overview', totalLoans: 'Total Loans', active: 'active', totalPrincipal: 'Total Principal', totalCollected: 'Total Collected', payments: 'payments', outstandingBalance: 'Outstanding Balance', pendingPayments: 'Pending Payments', awaitingVerification: 'awaiting verification', overdueInstallments: 'Overdue Installments', monthlyCollections: 'Monthly Collections (Last 6 months)', noData: 'No data yet', loanStatusDist: 'Loan Status Distribution' },
@@ -37,7 +37,7 @@ const en: T = {
 };
 
 const th: T = {
-  nav: { dashboard: 'แดชบอร์ด', loans: 'สินเชื่อ', payments: 'การชำระ', customers: 'ลูกค้า', users: 'ผู้ใช้งาน', parser: 'แยกข้อมูล' },
+  nav: { dashboard: 'แดชบอร์ด', loans: 'สินเชื่อ', payments: 'การชำระ', tracking: 'ติดตาม', customers: 'ลูกค้า', users: 'ผู้ใช้งาน', parser: 'แยกข้อมูล' },
   logout: 'ออกจากระบบ',
   login: { subtitle: 'ระบบจัดการสินเชื่อ', email: 'อีเมล', password: 'รหัสผ่าน', signIn: 'เข้าสู่ระบบ', signingIn: 'กำลังเข้าสู่ระบบ…', defaultCreds: 'ค่าเริ่มต้น: admin@loanapp.com / Admin@1234', loginFailed: 'เข้าสู่ระบบไม่สำเร็จ' },
   dashboard: { title: 'แดชบอร์ด', subtitle: 'ภาพรวมระบบสินเชื่อ', totalLoans: 'สินเชื่อทั้งหมด', active: 'ใช้งาน', totalPrincipal: 'เงินต้นรวม', totalCollected: 'ยอดเก็บได้รวม', payments: 'รายการ', outstandingBalance: 'ยอดคงค้าง', pendingPayments: 'รอการยืนยัน', awaitingVerification: 'รอตรวจสอบ', overdueInstallments: 'งวดค้างชำระ', monthlyCollections: 'ยอดเก็บรายเดือน (6 เดือนล่าสุด)', noData: 'ยังไม่มีข้อมูล', loanStatusDist: 'การกระจายสถานะสินเชื่อ' },
