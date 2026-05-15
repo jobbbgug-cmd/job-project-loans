@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
 import { blobProxy } from '@/lib/blob-url';
 
-interface Payment { id: number; loan_id: number; payment_number: string | null; loan_number: string; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; verified_at: string | null; loan_principal: number; loan_paid_amount: number; loan_term_months: number; }
+interface Payment { id: number; loan_id: number; payment_number: string | null; loan_number: string; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; verified_at: string | null; loan_principal: number; loan_paid_amount: number; loan_total_payment: number; loan_term_months: number; principal_component: number | null; interest_component: number | null; }
 interface User { role: string; }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -48,9 +48,9 @@ export default function PaymentsPage() {
   // Group all payments by loan for mobile cards
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const loanGroups = useMemo(() => {
-    const map = new Map<number, { loan_id: number; loan_number: string; customer_name: string; loan_principal: number; loan_paid_amount: number; loan_term_months: number; payments: Payment[] }>();
+    const map = new Map<number, { loan_id: number; loan_number: string; customer_name: string; loan_principal: number; loan_paid_amount: number; loan_total_payment: number; loan_term_months: number; payments: Payment[] }>();
     for (const p of payments) {
-      if (!map.has(p.loan_id)) map.set(p.loan_id, { loan_id: p.loan_id, loan_number: p.loan_number, customer_name: p.customer_name, loan_principal: p.loan_principal, loan_paid_amount: p.loan_paid_amount, loan_term_months: p.loan_term_months, payments: [] });
+      if (!map.has(p.loan_id)) map.set(p.loan_id, { loan_id: p.loan_id, loan_number: p.loan_number, customer_name: p.customer_name, loan_principal: p.loan_principal, loan_paid_amount: p.loan_paid_amount, loan_total_payment: p.loan_total_payment, loan_term_months: p.loan_term_months, payments: [] });
       map.get(p.loan_id)!.payments.push(p);
     }
     return Array.from(map.values());
@@ -133,7 +133,10 @@ export default function PaymentsPage() {
                 <th className="px-4 py-3 text-left font-medium">เลขที่การชำระเงิน</th>
                 <th className="px-4 py-3 text-left font-medium">{t.payments.cols['customer']}</th>
                 <th className="px-4 py-3 text-left font-medium">งวด</th>
-                {(['amount', 'date', 'slip', 'status'] as const).map(h => (
+                <th className="px-4 py-3 text-left font-medium">{t.payments.cols['amount']}</th>
+                <th className="px-4 py-3 text-left font-medium">เงินต้นที่จ่ายแล้ว</th>
+                <th className="px-4 py-3 text-left font-medium">ดอกเบี้ยที่จ่ายแล้ว</th>
+                {(['date', 'slip', 'status'] as const).map(h => (
                   <th key={h} className="px-4 py-3 text-left font-medium">{t.payments.cols[h]}</th>
                 ))}
                 <th className="px-4 py-3" />
@@ -145,6 +148,8 @@ export default function PaymentsPage() {
                     <td className="px-4 py-3 text-white">{p.customer_name}</td>
                     <td className="px-4 py-3 text-slate-300">{p.installment_no ? `งวด ${p.installment_no}` : '—'}</td>
                     <td className="px-4 py-3 text-white font-medium">฿{fmt(Number(p.amount))}</td>
+                    <td className="px-4 py-3 text-emerald-400">฿{fmt(Number(p.principal_component ?? 0))}</td>
+                    <td className="px-4 py-3 text-blue-400">฿{fmt(Number(p.interest_component ?? 0))}</td>
                     <td className="px-4 py-3 text-slate-300">{fmtDate(p.payment_date)}</td>
                     <td className="px-4 py-3">
                       {p.slip_path
@@ -185,8 +190,12 @@ export default function PaymentsPage() {
         ) : filteredGroups.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm">{t.payments.noFound}</div>
         ) : filteredGroups.map(g => {
-          const remaining = Math.max(0, Number(g.loan_principal ?? 0) - Number(g.loan_paid_amount ?? 0));
-          const paidInstallments = g.payments.filter(p => p.status === 'approved').length;
+          const approvedPayments = g.payments.filter(p => p.status === 'approved');
+          const principalPaid = approvedPayments.reduce((s, p) => s + Number(p.principal_component ?? 0), 0);
+          const interestPaid  = approvedPayments.reduce((s, p) => s + Number(p.interest_component ?? 0), 0);
+          const totalLoan = Number(g.loan_total_payment ?? 0);
+          const remaining = Math.max(0, totalLoan > 0 ? totalLoan - Number(g.loan_paid_amount ?? 0) : Number(g.loan_principal ?? 0) - principalPaid);
+          const paidInstallments = approvedPayments.length;
           const termMonths = Number(g.loan_term_months ?? 0);
           const pct = termMonths > 0 ? Math.min(100, (paidInstallments / termMonths) * 100) : 0;
           const visiblePayments = filter ? g.payments.filter(p => p.status === filter) : g.payments;
@@ -216,15 +225,19 @@ export default function PaymentsPage() {
                   )}
                 </div>
 
-                {/* Paid / Remaining */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-blue-500/15 border border-blue-500/30 rounded-lg px-3 py-2">
-                    <div className="text-blue-400/70 text-[10px] mb-0.5">จ่ายไปแล้ว</div>
-                    <div className="text-blue-400 font-bold text-sm">฿{fmt(Number(g.loan_paid_amount ?? 0))}</div>
+                {/* Principal paid / Interest paid / Remaining */}
+                <div className="grid grid-cols-3 gap-1.5 mb-3">
+                  <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-lg px-2 py-2">
+                    <div className="text-emerald-400/70 text-[9px] mb-0.5 leading-tight">เงินต้นที่จ่าย</div>
+                    <div className="text-emerald-400 font-bold text-xs">฿{fmt(principalPaid)}</div>
                   </div>
-                  <div className={`rounded-lg px-3 py-2 border ${remaining === 0 ? 'bg-emerald-500/15 border-emerald-500/30' : 'bg-yellow-500/15 border-yellow-500/30'}`}>
-                    <div className={`text-[10px] mb-0.5 ${remaining === 0 ? 'text-emerald-400/70' : 'text-yellow-400/70'}`}>คงเหลือ</div>
-                    <div className={`font-bold text-sm ${remaining === 0 ? 'text-emerald-400' : 'text-yellow-400'}`}>฿{fmt(remaining)}</div>
+                  <div className="bg-blue-500/15 border border-blue-500/30 rounded-lg px-2 py-2">
+                    <div className="text-blue-400/70 text-[9px] mb-0.5 leading-tight">ดอกเบี้ยที่จ่าย</div>
+                    <div className="text-blue-400 font-bold text-xs">฿{fmt(interestPaid)}</div>
+                  </div>
+                  <div className={`rounded-lg px-2 py-2 border ${remaining === 0 ? 'bg-emerald-500/15 border-emerald-500/30' : 'bg-yellow-500/15 border-yellow-500/30'}`}>
+                    <div className={`text-[9px] mb-0.5 leading-tight ${remaining === 0 ? 'text-emerald-400/70' : 'text-yellow-400/70'}`}>คงเหลือที่ต้องจ่าย</div>
+                    <div className={`font-bold text-xs ${remaining === 0 ? 'text-emerald-400' : 'text-yellow-400'}`}>฿{fmt(remaining)}</div>
                   </div>
                 </div>
 
