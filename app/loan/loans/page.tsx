@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
 
-interface Loan { id: number; loan_number: string; customer_name: string; principal: number; interest_rate: number; term_months: number; monthly_payment: number; status: string; start_date: string; paid_amount: number; }
+interface Loan { id: number; loan_number: string; customer_name: string; principal: number; interest_rate: number; term_months: number; monthly_payment: number; status: string; start_date: string; paid_amount: number; principal_paid: number; }
 interface User { role: string; }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -183,14 +183,15 @@ export default function LoansPage() {
                 <div className="text-emerald-400">฿{fmt(Number(loan.paid_amount))}</div>
               </div>
             </div>
-            {/* Progress bar */}
+            {/* Progress bar — uses principal_paid (principal component only) vs total principal */}
             {loan.principal > 0 && (() => {
-              const pct = Math.min(100, (Number(loan.paid_amount) / loan.principal) * 100);
+              const principalPaid = Number(loan.principal_paid ?? 0);
+              const pct = Math.min(100, (principalPaid / loan.principal) * 100);
               return (
                 <div className="mb-3">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-500">ชำระแล้ว</span>
-                    <span className="text-yellow-400 font-medium">฿{fmt(Number(loan.paid_amount))} / ฿{fmt(loan.principal)}</span>
+                    <span className="text-slate-500">เงินต้นที่จ่ายแล้ว</span>
+                    <span className="text-yellow-400 font-medium">฿{fmt(principalPaid)} / ฿{fmt(loan.principal)}</span>
                   </div>
                   <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full bg-yellow-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
