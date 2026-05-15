@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
 
-interface Loan { id: number; loan_number: string; customer_name: string; principal: number; interest_rate: number; term_months: number; monthly_payment: number; status: string; start_date: string; paid_amount: number; principal_paid: number; }
+interface Loan { id: number; loan_number: string; customer_name: string; principal: number; interest_rate: number; term_months: number; monthly_payment: number; status: string; start_date: string; paid_amount: number; principal_paid: number; interest_paid: number; }
 interface User { role: string; }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -118,7 +118,7 @@ export default function LoansPage() {
                     <td className="px-4 py-3 text-slate-300">{loan.interest_rate}%</td>
                     <td className="px-4 py-3 text-slate-300">{loan.term_months} {t.loanDetail.months}</td>
                     <td className="px-4 py-3 text-white">฿{fmt(loan.monthly_payment)}</td>
-                    <td className="px-4 py-3 text-emerald-400">฿{fmt(Number(loan.paid_amount))}</td>
+                    <td className="px-4 py-3 text-emerald-400">฿{fmt(Number(loan.principal_paid ?? 0) + Number(loan.interest_paid ?? 0))}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_BADGE[loan.status]}`}>
                         {t.status[loan.status as keyof typeof t.status] ?? loan.status}
@@ -180,7 +180,7 @@ export default function LoansPage() {
               </div>
               <div>
                 <div className="text-slate-500 text-xs">{t.loans.cols.paid}</div>
-                <div className="text-emerald-400">฿{fmt(Number(loan.paid_amount))}</div>
+                <div className="text-emerald-400">฿{fmt(Number(loan.principal_paid ?? 0) + Number(loan.interest_paid ?? 0))}</div>
               </div>
             </div>
             {/* Progress bar — uses principal_paid (principal component only) vs total principal */}

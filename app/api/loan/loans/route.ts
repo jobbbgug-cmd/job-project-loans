@@ -35,18 +35,19 @@ export async function GET(request: NextRequest) {
       let: { loanId: '$id' },
       pipeline: [
         { $match: { $expr: { $and: [{ $eq: ['$loan_id', '$$loanId'] }, { $eq: ['$status', 'paid'] }] } } },
-        { $group: { _id: null, total: { $sum: '$principal_component' } } },
+        { $group: { _id: null, principal: { $sum: '$principal_component' }, interest: { $sum: '$interest_component' } } },
       ],
-      as: 'principal_agg',
+      as: 'schedule_agg',
     } },
     { $addFields: {
       customer_name: '$customer.name',
       customer_email: '$customer.email',
       staff_name: '$staff.name',
       paid_amount: { $ifNull: [{ $arrayElemAt: ['$paid_agg.total', 0] }, 0] },
-      principal_paid: { $ifNull: [{ $arrayElemAt: ['$principal_agg.total', 0] }, 0] },
+      principal_paid: { $ifNull: [{ $arrayElemAt: ['$schedule_agg.principal', 0] }, 0] },
+      interest_paid:  { $ifNull: [{ $arrayElemAt: ['$schedule_agg.interest', 0] }, 0] },
     } },
-    { $project: { _id: 0, customer: 0, staff: 0, paid_agg: 0, principal_agg: 0 } },
+    { $project: { _id: 0, customer: 0, staff: 0, paid_agg: 0, schedule_agg: 0 } },
     { $sort: { created_at: -1 } },
   ];
 
