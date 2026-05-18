@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
       loan_status: '$loan.status',
       customer_name: '$customer.name',
       customer_id: '$loan.customer_id',
+      loan_principal: '$loan.principal',
+      loan_paid_amount: { $ifNull: ['$loan.paid_amount', 0] },
     } },
     { $project: { _id: 0, loan: 0, customer: 0 } },
     { $sort: { due_date: 1, loan_id: 1 } },

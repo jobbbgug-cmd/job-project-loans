@@ -14,6 +14,8 @@ interface TrackingEntry {
   principal_component: number;
   interest_component: number;
   status: string;
+  loan_principal: number;
+  loan_paid_amount: number;
 }
 
 type Period = 'overdue' | 'month' | '30days' | 'all';
@@ -49,7 +51,13 @@ export default function TrackingPage() {
   }, [period]);
 
   const overdueCount = entries.filter(e => daysOverdue(e.due_date) > 0).length;
-  const totalAmount = entries.reduce((s, e) => s + Number(e.due_amount), 0);
+  // Sum remaining balance per unique loan (principal - paid) to avoid double-counting multi-installment loans
+  const totalAmount = Object.values(
+    entries.reduce<Record<number, number>>((acc, e) => {
+      if (!(e.loan_id in acc)) acc[e.loan_id] = Math.max(0, Number(e.loan_principal) - Number(e.loan_paid_amount));
+      return acc;
+    }, {})
+  ).reduce((s, v) => s + v, 0);
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
@@ -109,6 +117,7 @@ export default function TrackingPage() {
             {entries.map(e => {
               const days = daysOverdue(e.due_date);
               const isOverdue = days > 0;
+              const remaining = Math.max(0, Number(e.loan_principal) - Number(e.loan_paid_amount));
               return (
                 <div key={e.id} className={`bg-slate-800 rounded-xl border p-4 space-y-3 ${isOverdue ? 'border-red-500/40 bg-red-500/5' : 'border-slate-700'}`}>
                   <div className="flex items-start justify-between gap-2">
@@ -128,7 +137,7 @@ export default function TrackingPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-slate-400 text-xs">ยอดที่ต้องชำระ</p>
-                      <p className="text-white font-bold text-base mt-0.5">฿{fmt(Number(e.due_amount))}</p>
+                      <p className="text-white font-bold text-base mt-0.5">฿{fmt(remaining)}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 pt-1 border-t border-slate-700">
@@ -164,6 +173,7 @@ export default function TrackingPage() {
                 {entries.map(e => {
                   const days = daysOverdue(e.due_date);
                   const isOverdue = days > 0;
+                  const remaining = Math.max(0, Number(e.loan_principal) - Number(e.loan_paid_amount));
                   return (
                     <tr key={e.id} className={`hover:bg-slate-700/30 transition-colors ${isOverdue ? 'bg-red-500/5' : ''}`}>
                       <td className="px-5 py-3.5 text-white font-medium">{e.customer_name}</td>
@@ -173,7 +183,7 @@ export default function TrackingPage() {
                         <span className={isOverdue ? 'text-red-400 font-medium' : 'text-white'}>{fmtDate(e.due_date)}</span>
                         {isOverdue && <span className="ml-2 text-xs text-red-400/70">เกิน {days} วัน</span>}
                       </td>
-                      <td className="px-4 py-3.5 text-right text-white font-semibold font-mono">฿{fmt(Number(e.due_amount))}</td>
+                      <td className="px-4 py-3.5 text-right text-white font-semibold font-mono">฿{fmt(remaining)}</td>
                       <td className="px-4 py-3.5 text-center">
                         {isOverdue
                           ? <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-red-500/20 text-red-400">เกินกำหนด</span>

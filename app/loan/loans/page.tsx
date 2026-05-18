@@ -114,7 +114,10 @@ export default function LoansPage() {
                   <tr key={loan.id} className="hover:bg-slate-700/30 transition-colors">
                     <td className="px-4 py-3 text-yellow-400 font-mono text-xs">{loan.loan_number}</td>
                     <td className="px-4 py-3 text-white">{loan.customer_name}</td>
-                    <td className="px-4 py-3 text-white">฿{fmt(loan.principal)}</td>
+                    <td className="px-4 py-3">
+                      <div className="text-white">฿{fmt(loan.principal)}</div>
+                      <div className="text-red-400 text-xs mt-0.5">คงเหลือ ฿{fmt(Math.max(0, loan.principal - Number(loan.principal_paid ?? 0)))}</div>
+                    </td>
                     <td className="px-4 py-3 text-slate-300">{loan.interest_rate}%</td>
                     <td className="px-4 py-3 text-slate-300">{loan.term_months} {t.loanDetail.months}</td>
                     <td className="px-4 py-3 text-white">฿{fmt(loan.monthly_payment)}</td>
@@ -195,6 +198,9 @@ export default function LoansPage() {
                   </div>
                   <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full bg-yellow-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="flex justify-end mt-1">
+                    <span className="text-red-400 text-xs font-medium">คงเหลือ ฿{fmt(Math.max(0, loan.principal - principalPaid))}</span>
                   </div>
                 </div>
               );
