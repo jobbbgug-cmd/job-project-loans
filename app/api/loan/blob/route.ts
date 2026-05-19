@@ -14,14 +14,21 @@ export async function GET(request: NextRequest) {
 
   try {
     if (token) {
+      // get() fetches the private blob with Bearer auth via undici and returns a stream
       const { get } = await import('@vercel/blob');
-      const meta = await get(url, { token, access: 'private' });
-      if (!meta) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-      // Redirect browser to signed downloadUrl — avoids server-to-server 403
-      return NextResponse.redirect(meta.downloadUrl);
+      const result = await get(url, { token, access: 'private' });
+      if (!result || !result.stream) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
+      return new NextResponse(result.stream as ReadableStream, {
+        headers: {
+          'Content-Type': result.blob.contentType ?? 'application/octet-stream',
+          'Cache-Control': 'private, max-age=3600',
+        },
+      });
     }
 
-    // Local dev — serve directly from filesystem (path starting with /)
+    // Local dev — path is /uploads/... served by Next.js static
     return NextResponse.redirect(new URL(url, request.url));
   } catch (err) {
     console.error('blob proxy error:', err);
