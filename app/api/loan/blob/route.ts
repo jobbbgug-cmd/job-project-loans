@@ -17,29 +17,12 @@ export async function GET(request: NextRequest) {
       const { get } = await import('@vercel/blob');
       const meta = await get(url, { token, access: 'private' });
       if (!meta) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-      const res = await fetch(meta.downloadUrl);
-      if (!res.ok) return new NextResponse(null, { status: res.status });
-
-      const body = await res.blob();
-      return new NextResponse(body, {
-        headers: {
-          'Content-Type': meta.contentType ?? 'application/octet-stream',
-          'Cache-Control': 'private, max-age=3600',
-        },
-      });
+      // Redirect browser to signed downloadUrl — avoids server-to-server 403
+      return NextResponse.redirect(meta.downloadUrl);
     }
 
-    // Local dev — no token, serve directly
-    const res = await fetch(url);
-    if (!res.ok) return new NextResponse(null, { status: res.status });
-    const body = await res.blob();
-    return new NextResponse(body, {
-      headers: {
-        'Content-Type': res.headers.get('Content-Type') ?? 'application/octet-stream',
-        'Cache-Control': 'private, max-age=3600',
-      },
-    });
+    // Local dev — serve directly from filesystem (path starting with /)
+    return NextResponse.redirect(new URL(url, request.url));
   } catch (err) {
     console.error('blob proxy error:', err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
