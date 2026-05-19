@@ -11,20 +11,37 @@ export async function GET(request: NextRequest) {
   }
 
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
   try {
-    const res = await fetch(url, { headers });
-    if (!res.ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (token) {
+      const { get } = await import('@vercel/blob');
+      const blob = await get(url, { token });
+      if (!blob) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    const blob = await res.blob();
-    return new NextResponse(blob, {
+      const res = await fetch(blob.downloadUrl);
+      if (!res.ok) return new NextResponse(null, { status: res.status });
+
+      const body = await res.blob();
+      return new NextResponse(body, {
+        headers: {
+          'Content-Type': blob.contentType ?? 'application/octet-stream',
+          'Cache-Control': 'private, max-age=3600',
+        },
+      });
+    }
+
+    // Local dev fallback — direct fetch (no auth needed for local files)
+    const res = await fetch(url);
+    if (!res.ok) return new NextResponse(null, { status: res.status });
+    const body = await res.blob();
+    return new NextResponse(body, {
       headers: {
         'Content-Type': res.headers.get('Content-Type') ?? 'application/octet-stream',
         'Cache-Control': 'private, max-age=3600',
       },
     });
   } catch (err) {
+    console.error('blob proxy error:', err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

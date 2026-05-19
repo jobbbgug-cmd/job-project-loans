@@ -166,7 +166,8 @@ export async function POST(request: NextRequest) {
     let fileUrl: string;
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       const { put } = await import('@vercel/blob');
-      const { url } = await put(`loans/${loanId}/${uniqueName}`, slip, { access: 'private' as const });
+      const token = process.env.BLOB_READ_WRITE_TOKEN!;
+      const { url } = await put(`loans/${loanId}/${uniqueName}`, slip, { access: 'private', token });
       fileUrl = url;
     } else {
       const { writeFile, mkdir } = await import('fs/promises');
