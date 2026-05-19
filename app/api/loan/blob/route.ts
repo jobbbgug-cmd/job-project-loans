@@ -15,22 +15,22 @@ export async function GET(request: NextRequest) {
   try {
     if (token) {
       const { get } = await import('@vercel/blob');
-      const blob = await get(url, { token });
-      if (!blob) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      const meta = await get(url, { token, access: 'private' });
+      if (!meta) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-      const res = await fetch(blob.downloadUrl);
+      const res = await fetch(meta.downloadUrl);
       if (!res.ok) return new NextResponse(null, { status: res.status });
 
       const body = await res.blob();
       return new NextResponse(body, {
         headers: {
-          'Content-Type': blob.contentType ?? 'application/octet-stream',
+          'Content-Type': meta.contentType ?? 'application/octet-stream',
           'Cache-Control': 'private, max-age=3600',
         },
       });
     }
 
-    // Local dev fallback — direct fetch (no auth needed for local files)
+    // Local dev — no token, serve directly
     const res = await fetch(url);
     if (!res.ok) return new NextResponse(null, { status: res.status });
     const body = await res.blob();
