@@ -194,7 +194,7 @@ export default function PaymentsPage() {
           const interestPaid  = Number(g.loan_interest_paid  ?? 0);
           const totalLoan = Number(g.loan_total_payment ?? 0);
           const remaining = Math.max(0, totalLoan > 0 ? totalLoan - Number(g.loan_paid_amount ?? 0) : Number(g.loan_principal ?? 0) - principalPaid);
-          const paidInstallments = approvedPayments.length;
+          const paidInstallments = g.payments.filter(p => p.status === 'approved').length;
           const termMonths = Number(g.loan_term_months ?? 0);
           const pct = termMonths > 0 ? Math.min(100, (paidInstallments / termMonths) * 100) : 0;
           const visiblePayments = filter ? g.payments.filter(p => p.status === filter) : g.payments;
