@@ -32,6 +32,16 @@ export async function GET(request: NextRequest) {
     { $unwind: { path: '$verifier', preserveNullAndEmptyArrays: true } },
     { $lookup: { from: 'payment_schedule', localField: 'schedule_id', foreignField: 'id', as: 'schedule' } },
     { $unwind: { path: '$schedule', preserveNullAndEmptyArrays: true } },
+    // Loan-level principal/interest totals from paid schedule entries (accurate regardless of per-payment schedule linkage)
+    { $lookup: {
+      from: 'payment_schedule',
+      let: { loanId: '$loan_id' },
+      pipeline: [
+        { $match: { $expr: { $and: [{ $eq: ['$loan_id', '$$loanId'] }, { $eq: ['$status', 'paid'] }] } } },
+        { $group: { _id: null, principal: { $sum: '$principal_component' }, interest: { $sum: '$interest_component' } } },
+      ],
+      as: 'loan_sched_agg',
+    } },
     { $addFields: {
       loan_number: '$loan.loan_number',
       customer_name: '$customer.name',
@@ -42,10 +52,14 @@ export async function GET(request: NextRequest) {
       loan_paid_amount: '$loan.paid_amount',
       loan_total_payment: '$loan.total_payment',
       loan_term_months: '$loan.term_months',
-      principal_component: '$schedule.principal_component',
-      interest_component: '$schedule.interest_component',
+      // Per-payment split: use schedule component if available, else derive from payment_type
+      principal_component: { $ifNull: ['$schedule.principal_component', { $cond: [{ $eq: ['$payment_type', 'interest'] }, 0, '$amount'] }] },
+      interest_component:  { $ifNull: ['$schedule.interest_component',  { $cond: [{ $eq: ['$payment_type', 'interest'] }, '$amount', 0] }] },
+      // Loan-level totals (used for summary stats)
+      loan_principal_paid: { $ifNull: [{ $arrayElemAt: ['$loan_sched_agg.principal', 0] }, 0] },
+      loan_interest_paid:  { $ifNull: [{ $arrayElemAt: ['$loan_sched_agg.interest',  0] }, 0] },
     } },
-    { $project: { _id: 0, loan: 0, customer: 0, verifier: 0, schedule: 0 } },
+    { $project: { _id: 0, loan: 0, customer: 0, verifier: 0, schedule: 0, loan_sched_agg: 0 } },
     { $sort: { created_at: -1 } },
   );
 

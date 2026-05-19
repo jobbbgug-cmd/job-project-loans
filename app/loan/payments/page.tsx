@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
 import { blobProxy } from '@/lib/blob-url';
 
-interface Payment { id: number; loan_id: number; payment_number: string | null; loan_number: string; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; verified_at: string | null; loan_principal: number; loan_paid_amount: number; loan_total_payment: number; loan_term_months: number; principal_component: number | null; interest_component: number | null; }
+interface Payment { id: number; loan_id: number; payment_number: string | null; loan_number: string; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; verified_at: string | null; loan_principal: number; loan_paid_amount: number; loan_total_payment: number; loan_term_months: number; principal_component: number | null; interest_component: number | null; loan_principal_paid: number; loan_interest_paid: number; }
 interface User { role: string; }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -48,9 +48,9 @@ export default function PaymentsPage() {
   // Group all payments by loan for mobile cards
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const loanGroups = useMemo(() => {
-    const map = new Map<number, { loan_id: number; loan_number: string; customer_name: string; loan_principal: number; loan_paid_amount: number; loan_total_payment: number; loan_term_months: number; payments: Payment[] }>();
+    const map = new Map<number, { loan_id: number; loan_number: string; customer_name: string; loan_principal: number; loan_paid_amount: number; loan_total_payment: number; loan_term_months: number; loan_principal_paid: number; loan_interest_paid: number; payments: Payment[] }>();
     for (const p of payments) {
-      if (!map.has(p.loan_id)) map.set(p.loan_id, { loan_id: p.loan_id, loan_number: p.loan_number, customer_name: p.customer_name, loan_principal: p.loan_principal, loan_paid_amount: p.loan_paid_amount, loan_total_payment: p.loan_total_payment, loan_term_months: p.loan_term_months, payments: [] });
+      if (!map.has(p.loan_id)) map.set(p.loan_id, { loan_id: p.loan_id, loan_number: p.loan_number, customer_name: p.customer_name, loan_principal: p.loan_principal, loan_paid_amount: p.loan_paid_amount, loan_total_payment: p.loan_total_payment, loan_term_months: p.loan_term_months, loan_principal_paid: p.loan_principal_paid, loan_interest_paid: p.loan_interest_paid, payments: [] });
       map.get(p.loan_id)!.payments.push(p);
     }
     return Array.from(map.values());
@@ -190,9 +190,8 @@ export default function PaymentsPage() {
         ) : filteredGroups.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm">{t.payments.noFound}</div>
         ) : filteredGroups.map(g => {
-          const approvedPayments = g.payments.filter(p => p.status === 'approved');
-          const principalPaid = approvedPayments.reduce((s, p) => s + Number(p.principal_component ?? 0), 0);
-          const interestPaid  = approvedPayments.reduce((s, p) => s + Number(p.interest_component ?? 0), 0);
+          const principalPaid = Number(g.loan_principal_paid ?? 0);
+          const interestPaid  = Number(g.loan_interest_paid  ?? 0);
           const totalLoan = Number(g.loan_total_payment ?? 0);
           const remaining = Math.max(0, totalLoan > 0 ? totalLoan - Number(g.loan_paid_amount ?? 0) : Number(g.loan_principal ?? 0) - principalPaid);
           const paidInstallments = approvedPayments.length;
