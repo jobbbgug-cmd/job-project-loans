@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medical Audit Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;
+  --border:rgba(255,255,255,0.08);
+  --teal:#2dd4bf;--teal2:#0d9488;
+  --blue:#60a5fa;--purple:#a78bfa;--amber:#fbbf24;
+  --rose:#f87171;--green:#4ade80;--slate:#8b949e;
+  --text:#e6edf3;--text2:#c9d1d9;--r:12px;--r2:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+/* HEADER */
+.hdr{background:linear-gradient(90deg,#0d2137,#0d1a2e);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,.5)}
+.hdr-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--teal2),var(--teal));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 18px rgba(45,212,191,.25);flex-shrink:0}
+.hdr h1{font-size:1.05rem;font-weight:700}
+.hdr p{font-size:.72rem;color:var(--slate);margin-top:1px}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.hdrbadge{border-radius:20px;padding:3px 11px;font-size:.7rem;font-weight:700;border:1px solid}
+.hb-teal{background:rgba(45,212,191,.1);border-color:rgba(45,212,191,.3);color:var(--teal)}
+.hb-blue{background:rgba(96,165,250,.1);border-color:rgba(96,165,250,.3);color:var(--blue)}
+/* LAYOUT */
+.wrap{max-width:1700px;margin:0 auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.card-head{background:rgba(45,212,191,.05);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-title{font-size:.85rem;font-weight:700;color:var(--teal);display:flex;align-items:center;gap:7px}
+/* TABS */
+.tabs{display:flex;gap:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.tab{padding:11px 20px;font-family:'Sarabun',sans-serif;font-size:.83rem;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;color:var(--slate);cursor:pointer;transition:all .18s;white-space:nowrap}
+.tab:hover{color:var(--text2);background:rgba(255,255,255,.03)}
+.tab.on{color:var(--teal);border-bottom-color:var(--teal);background:rgba(45,212,191,.05)}
+.tabpane{display:none}.tabpane.on{display:flex;flex-direction:column;gap:16px}
+/* BUTTONS */
+.btn{padding:8px 14px;border:none;border-radius:var(--r2);font-family:'Sarabun',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap}
+.btn-p{background:linear-gradient(135deg,var(--teal2),var(--teal));color:#fff;box-shadow:0 3px 12px rgba(45,212,191,.25)}
+.btn-p:hover{opacity:.9;transform:translateY(-1px)}
+.btn-g{background:rgba(255,255,255,.05);color:var(--slate);border:1px solid var(--border)}
+.btn-g:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.btn-r{background:rgba(248,113,113,.1);color:var(--rose);border:1px solid rgba(248,113,113,.2)}
+.btn-r:hover{background:rgba(248,113,113,.2)}
+/* PASTE AREA */
+.paste-wrap{padding:16px 20px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+textarea{background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:var(--r2);padding:10px 13px;font-family:'Sarabun',sans-serif;font-size:.82rem;color:var(--text2);outline:none;resize:vertical;transition:border-color .2s,box-shadow .2s;width:100%}
+textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(45,212,191,.12)}
+.paste-actions{display:flex;flex-direction:column;gap:7px;min-width:120px}
+.month-name-input{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:'Sarabun',sans-serif;font-size:.85rem;font-weight:700;color:var(--teal);outline:none;width:100%;transition:border-color .2s;margin-bottom:4px}
+.month-name-input:focus{border-color:var(--teal)}
+/* MONTH LIST */
+.month-tabs{display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px 0}
+.mtab{padding:6px 14px;border-radius:20px;font-size:.78rem;font-weight:700;border:1px solid var(--border);background:var(--bg3);color:var(--slate);cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:6px}
+.mtab:hover{border-color:rgba(45,212,191,.4);color:var(--text)}
+.mtab.active{background:rgba(45,212,191,.12);border-color:rgba(45,212,191,.4);color:var(--teal)}
+.mtab .mx{color:var(--rose);font-size:.75rem;margin-left:2px;opacity:.7}
+.mtab .mx:hover{opacity:1}
+.mtab-all{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);color:var(--amber)}
+.mtab-all.active{background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.5)}
+/* FILTER */
+.fbar{display:flex;flex-wrap:wrap;gap:11px;align-items:flex-end;padding:14px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r)}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fl{font-size:.68rem;font-weight:700;color:var(--slate);letter-spacing:.05em;text-transform:uppercase}
+select{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--r2);padding:7px 10px;font-family:'Sarabun',sans-serif;font-size:.82rem;color:var(--text2);outline:none;transition:border-color .2s;min-width:120px}
+select:focus{border-color:var(--teal)}
+select option{background:#1a2436}
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.c0::before{background:linear-gradient(90deg,var(--teal2),var(--teal))}
+.kpi.c1::before{background:linear-gradient(90deg,#2563eb,var(--blue))}
+.kpi.c2::before{background:linear-gradient(90deg,#7c3aed,var(--purple))}
+.kpi.c3::before{background:linear-gradient(90deg,#d97706,var(--amber))}
+.kpi.c4::before{background:linear-gradient(90deg,#dc2626,var(--rose))}
+.kpi.c5::before{background:linear-gradient(90deg,#16a34a,var(--green))}
+.kpi-val{font-size:1.8rem;font-weight:800;line-height:1;margin-top:3px}
+.kpi-lbl{font-size:.68rem;color:var(--slate);margin-top:5px}
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
+.chart-wrap{position:relative;height:230px}
+.chart-wrap.h260{height:260px}
+.cc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cc-title{font-size:.8rem;font-weight:700;color:var(--teal);display:flex;align-items:center;gap:6px}
+/* TABLE */
+.tbl-wrap{overflow-x:auto;max-height:520px;overflow-y:auto}
+.tbl-wrap::-webkit-scrollbar{width:5px;height:5px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:rgba(45,212,191,.3);border-radius:3px}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+thead{position:sticky;top:0;z-index:10}
+th{background:#0d1f33;color:var(--teal);font-weight:700;padding:8px 10px;text-align:right;font-size:.67rem;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+th:first-child{text-align:left;min-width:160px}
+td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text2);text-align:right;white-space:nowrap}
+td:first-child{text-align:left}
+tr:hover td{background:rgba(45,212,191,.04)}
+.row-got td{color:#94a3b8;font-size:.75rem}
+.row-max td{color:#475569;font-size:.72rem;font-style:italic}
+.row-pct td{font-weight:700;font-size:.8rem}
+.row-hosp-got td{color:var(--amber);background:rgba(251,191,36,.04);font-size:.76rem}
+.row-hosp-max td{color:#92400e;background:rgba(251,191,36,.03);font-style:italic;font-size:.73rem}
+.row-hosp-pct td{font-weight:800;font-size:.84rem;background:rgba(251,191,36,.07);color:var(--amber)}
+.row-sp td{height:5px;border:none;background:rgba(255,255,255,.015)}
+.grplabel{font-weight:700;text-align:left !important}
+.pct-g{color:var(--green)}.pct-y{color:var(--amber)}.pct-r{color:var(--rose)}
+/* RAW TABLE */
+.raw-wrap{overflow-x:auto;max-height:400px;overflow-y:auto}
+.raw-wrap table{min-width:1200px}
+.raw-wrap th,.raw-wrap td{text-align:left}
+.sc{text-align:center !important}
+.sf{color:var(--green);font-weight:700}.sh{color:var(--teal);font-weight:600}.sm{color:var(--amber)}.sl{color:var(--rose)}.sna{color:var(--slate);font-style:italic}
+.pb{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700}
+.pba{background:rgba(74,222,128,.12);color:var(--green)}.pbb{background:rgba(45,212,191,.12);color:var(--teal)}
+.pbc{background:rgba(251,191,36,.12);color:var(--amber)}.pbd{background:rgba(248,113,113,.12);color:var(--rose)}
+/* COMPARE TABLE */
+.cmp-table th:not(:first-child){min-width:90px}
+/* ITEM HEATMAP */
+.hm-cell{text-align:center !important;font-weight:700;border-radius:4px;padding:5px 8px !important}
+.hm-s{background:rgba(74,222,128,.18);color:#4ade80}   /* >=90% */
+.hm-a{background:rgba(45,212,191,.15);color:#2dd4bf}   /* >=80% */
+.hm-b{background:rgba(251,191,36,.15);color:#fbbf24}   /* >=70% */
+.hm-c{background:rgba(248,113,113,.15);color:#f87171}  /* <70%  */
+.hm-na{background:rgba(148,163,184,.08);color:#64748b;font-style:italic;font-weight:400}
+.row-item-hosp td{background:rgba(251,191,36,.06);font-weight:800}
+.row-item-hosp .grplabel{color:var(--amber)}
+/* MISC */
+.empty{text-align:center;padding:32px;color:var(--slate);font-size:.84rem}
+.statusmsg{font-size:.78rem;padding:8px 14px;border-radius:8px;background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.2);color:var(--teal);display:none}
+.statusmsg.show{display:block}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-icon">🏥</div>
+  <div><h1>Medical Audit Dashboard</h1><p>วางข้อมูลทีละเดือน — ดูรายเดือน / สะสม / เปรียบเทียบ</p></div>
+  <div class="hdr-right">
+    <span class="hdrbadge hb-teal" id="hbMonths">0 เดือน</span>
+    <span class="hdrbadge hb-blue" id="hbTotal">0 ราย</span>
+  </div>
+</div>
+
+<div class="wrap">
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab on"  id="t0" onclick="goTab(0)">📥 วางข้อมูล</button>
+  <button class="tab"     id="t1" onclick="goTab(1)">📅 รายเดือน / สะสม</button>
+  <button class="tab"     id="t2" onclick="goTab(2)">📈 เปรียบเทียบเดือน</button>
+  <button class="tab"     id="t4" onclick="goTab(4)">🔢 รายข้อ 1-8</button>
+  <button class="tab"     id="t3" onclick="goTab(3)">🗃 ข้อมูลดิบ</button>
+</div>
+
+<!-- TAB 0: INPUT -->
+<div class="tabpane on" id="p0">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">📋 วางข้อมูลเดือนใหม่</div>
+      <span id="pasteStatus" class="statusmsg"></span>
+    </div>
+    <div class="paste-wrap">
+      <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px">
+        <input class="month-name-input" id="monthNameInput" placeholder="ตั้งชื่อเดือน เช่น ต.ค.2568">
+        <textarea id="rawTA" style="height:120px" placeholder="ก็อบข้อมูลจาก Excel / Google Sheets แล้ววางที่นี่ (Tab-separated หรือ CSV)"></textarea>
+      </div>
+      <div class="paste-actions">
+        <button class="btn btn-p" id="btnLoad" onclick="loadMonth()">▶ โหลดเดือนนี้</button>
+        <button class="btn btn-g" onclick="loadDemo()">📌 ตัวอย่าง</button>
+        <button class="btn btn-g" onclick="document.getElementById('rawTA').value='';document.getElementById('pasteStatus').className='statusmsg'">↺ ล้าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- loaded months list -->
+  <div class="card" id="monthListCard" style="display:none">
+    <div class="card-head"><div class="card-title">📅 เดือนที่โหลดแล้ว</div></div>
+    <div id="monthListBody" style="padding:14px 20px;display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- TAB 1: MONTHLY / CUMULATIVE -->
+<div class="tabpane" id="p1">
+  <div class="month-tabs" id="monthTabsRow" style="padding-bottom:10px;border-bottom:1px solid var(--border)"></div>
+
+  <div class="fbar">
+    <div class="fg"><span class="fl">จัดกลุ่มโดย</span>
+      <select id="f1group" onchange="renderTab1()">
+        <option value="ward">ตึก / วอร์ด</option>
+        <option value="dept">กลุ่มงาน</option>
+        <option value="doctor">ว.แพทย์</option>
+      </select>
+    </div>
+    <div class="fg"><span class="fl">กรองตึก</span>
+      <select id="f1ward" onchange="renderTab1()"><option value="">ทั้งหมด</option></select>
+    </div>
+    <div class="fg"><span class="fl">กรองกลุ่มงาน</span>
+      <select id="f1dept" onchange="renderTab1()"><option value="">ทั้งหมด</option></select>
+    </div>
+    <button class="btn btn-g" style="font-size:.72rem;padding:5px 10px" onclick="exportSummaryCSV()">⬇ Export CSV</button>
+  </div>
+
+  <div class="kpi-row" id="kpi1"></div>
+
+  <div class="charts-grid">
+    <div class="card"><div style="padding:16px 18px">
+      <div class="cc-head"><div class="cc-title">📊 % แยกตามกลุ่ม</div>
+        <select id="f1barBy" onchange="renderTab1()" style="font-size:.72rem;padding:4px 8px;min-width:90px">
+          <option value="ward">ตึก</option><option value="dept">กลุ่มงาน</option><option value="doctor">ว.แพทย์</option>
+        </select>
+      </div>
+      <div class="chart-wrap"><canvas id="c1bar"></canvas></div>
+    </div></div>
+    <div class="card"><div style="padding:16px 18px">
+      <div class="cc-head"><div class="cc-title">📋 % เฉลี่ยแต่ละหมวด</div></div>
+      <div class="chart-wrap"><canvas id="c1cat"></canvas></div>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="card-title" id="summaryTitle">📑 ตารางสรุป</div></div>
+    <div class="tbl-wrap"><table><thead id="sumHead"></thead><tbody id="sumBody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- TAB 2: COMPARE -->
+<div class="tabpane" id="p2">
+  <div class="fbar">
+    <div class="fg"><span class="fl">จัดกลุ่มโดย</span>
+      <select id="f2group" onchange="renderTab2()">
+        <option value="ward">ตึก / วอร์ด</option>
+        <option value="dept">กลุ่มงาน</option>
+        <option value="doctor">ว.แพทย์</option>
+      </select>
+    </div>
+    <button class="btn btn-g" style="font-size:.72rem;padding:5px 10px" onclick="exportCompareCSV()">⬇ Export CSV</button>
+  </div>
+
+  <div class="charts-grid">
+    <div class="card" style="grid-column:1/-1"><div style="padding:16px 18px">
+      <div class="cc-head"><div class="cc-title">📈 แนวโน้ม % รายเดือน (Line)</div></div>
+      <div class="chart-wrap h260"><canvas id="c2line"></canvas></div>
+    </div></div>
+    <div class="card"><div style="padding:16px 18px">
+      <div class="cc-head"><div class="cc-title">📊 เปรียบเทียบแต่ละกลุ่ม แยกเดือน</div></div>
+      <div class="chart-wrap h260"><canvas id="c2bar"></canvas></div>
+    </div></div>
+    <div class="card"><div style="padding:16px 18px">
+      <div class="cc-head"><div class="cc-title">🔵 ผ่าน/ไม่ผ่าน รวมทุกเดือน</div></div>
+      <div class="chart-wrap"><canvas id="c2donut"></canvas></div>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="card-title">📑 ตาราง % แต่ละกลุ่ม × เดือน</div></div>
+    <div class="tbl-wrap"><table class="cmp-table"><thead id="cmpHead"></thead><tbody id="cmpBody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- TAB 3: RAW -->
+<div class="tabpane" id="p3">
+  <div class="fbar">
+    <div class="fg"><span class="fl">เดือน</span>
+      <select id="f3month" onchange="renderTab3()"><option value="">ทั้งหมด</option></select>
+    </div>
+    <div class="fg"><span class="fl">ตึก</span>
+      <select id="f3ward" onchange="renderTab3()"><option value="">ทั้งหมด</option></select>
+    </div>
+    <div class="fg"><span class="fl">กลุ่มงาน</span>
+      <select id="f3dept" onchange="renderTab3()"><option value="">ทั้งหมด</option></select>
+    </div>
+    <div class="fg"><span class="fl">ว.แพทย์</span>
+      <select id="f3doc" onchange="renderTab3()"><option value="">ทั้งหมด</option></select>
+    </div>
+    <button class="btn btn-g" style="font-size:.72rem;padding:5px 10px" onclick="exportRawCSV()">⬇ Export CSV</button>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">🗃 ข้อมูลดิบ</div>
+      <span id="rawCnt" style="font-size:.72rem;color:var(--slate)"></span>
+    </div>
+    <div class="raw-wrap"><table><thead id="rawHead"></thead><tbody id="rawBody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- TAB 4: ITEM BREAKDOWN -->
+<div class="tabpane" id="p4">
+  <div class="fbar">
+    <div class="fg"><span class="fl">แยกตาม</span>
+      <select id="f4group" onchange="renderTab4()">
+        <option value="all">ทั้งโรงพยาบาล</option>
+        <option value="ward">ตึก / วอร์ด</option>
+        <option value="dept">กลุ่มงาน</option>
+        <option value="doctor">ว.แพทย์</option>
+      </select>
+    </div>
+    <div class="fg"><span class="fl">เดือน</span>
+      <select id="f4month" onchange="renderTab4()"><option value="">ทั้งหมด</option></select>
+    </div>
+    <div class="fg"><span class="fl">แสดงเป็น</span>
+      <select id="f4mode" onchange="renderTab4()">
+        <option value="avg">คะแนนเฉลี่ย</option>
+        <option value="pct">% ของคะแนนเต็ม</option>
+        <option value="sum">คะแนนรวม</option>
+      </select>
+    </div>
+    <button class="btn btn-g" style="font-size:.72rem;padding:5px 10px" onclick="exportItem4CSV()">⬇ Export CSV</button>
+  </div>
+
+  <!-- heat-map style table -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title" id="item4Title">🔢 คะแนนแต่ละข้อ แยกตามกลุ่ม</div>
+    </div>
+    <div class="tbl-wrap"><table><thead id="item4Head"></thead><tbody id="item4Body"></tbody></table></div>
+  </div>
+
+  <!-- bar chart per item -->
+  <div class="charts-grid">
+    <div class="card" style="grid-column:1/-1"><div style="padding:16px 18px">
+      <div class="cc-head"><div class="cc-title" id="item4ChartTitle">📊 เปรียบเทียบคะแนนแต่ละข้อ แยกตามกลุ่ม</div></div>
+      <div class="chart-wrap h260"><canvas id="c4bar"></canvas></div>
+    </div></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// =========================================================
+// SCORE MAP
+// =========================================================
+var SCORE_MAP  = {};
+var SCORE_COLS = [];
+var G_HEADERS  = [];
+
+function buildScoreMap(hdrs) {
+  SCORE_MAP = {}; SCORE_COLS = [];
+  var maxByNum = {1:4, 2:3, 3:4, 4:4, 5:4, 6:4, 7:4, 8:4};
+  for (var i = 0; i < hdrs.length; i++) {
+    var h = hdrs[i];
+    var nh = h.toString().trim().toLowerCase();
+    var m = nh.match(/^([1-8])\./);
+    if (m) {
+      var num = parseInt(m[1]);
+      SCORE_MAP[h] = maxByNum[num];
+      SCORE_COLS.push(h);
+    }
+  }
+  SCORE_COLS.sort(function(a,b){ return parseInt(a.trim()[0]) - parseInt(b.trim()[0]); });
+  if (hdrs.length > G_HEADERS.length) G_HEADERS = hdrs.slice();
+}
+
+function shortCol(c) { return c.replace(/ *\(\d+\)$/, '').replace(/^\d+\./, '').trim(); }
+
+// =========================================================
+// PARSE
+// =========================================================
+function parseRaw(raw) {
+  var lines = raw.trim().split('\n').filter(function(l){ return l.trim(); });
+  if (lines.length < 2) return { headers:[], rows:[] };
+  var sep = lines[0].indexOf('\t') >= 0 ? '\t' : ',';
+  var hdrs = lines[0].split(sep).map(function(h){ return h.trim().replace(/^"|"$/g,''); });
+  var rows = [];
+  for (var i = 1; i < lines.length; i++) {
+    var cells = lines[i].split(sep).map(function(c){ return c.trim().replace(/^"|"$/g,''); });
+    var obj = {};
+    for (var j = 0; j < hdrs.length; j++) obj[hdrs[j]] = cells[j] !== undefined ? cells[j] : '';
+    rows.push(obj);
+  }
+  return { headers: hdrs, rows: rows };
+}
+
+function fmt2(n) { return parseFloat(n).toFixed(2); }
+function t2(n)   { return parseFloat(n.toFixed(2)); }
+
+function computeScore(row) {
+  var got = 0, max = 0;
+  for (var i = 0; i < SCORE_COLS.length; i++) {
+    var c = SCORE_COLS[i];
+    var v = (row[c] !== undefined ? row[c] : '').toString().trim();
+    if (!v || v.toUpperCase() === 'NA') continue;
+    var n = Number(v);
+    if (!isNaN(n)) { got += n; max += (SCORE_MAP[c] || 4); }
+  }
+  if (max === 0) return { got:0, max:0, pct:0 };
+  return { got:got, max:max, pct: t2(got/max*100) };
+}
+
+// =========================================================
+// MONTHS STORE
+// =========================================================
+var MONTHS = []; // [{name, rows, headers}]
+var activeMonth = null; // null = all
+
+// =========================================================
+// LOAD MONTH
+// =========================================================
+function loadMonth() {
+  var raw  = document.getElementById('rawTA').value;
+  var name = document.getElementById('monthNameInput').value.trim();
+  if (!raw.trim()) { showStatus('กรุณาวางข้อมูลก่อนครับ', false); return; }
+  if (!name)       { showStatus('กรุณาตั้งชื่อเดือนก่อนครับ', false); return; }
+
+  var parsed = parseRaw(raw);
+  if (!parsed.headers.length || !parsed.rows.length) {
+    showStatus('ไม่พบข้อมูล — ตรวจสอบรูปแบบการวาง', false); return;
+  }
+
+  buildScoreMap(parsed.headers);
+  if (!SCORE_COLS.length) {
+    showStatus('ไม่พบ column คะแนน (ต้องขึ้นต้นด้วย 1. ถึง 8.)', false); return;
+  }
+
+  var scored = parsed.rows.map(function(r) {
+    var s = computeScore(r);
+    r._got = s.got; r._max = s.max; r._pct = s.pct; r._month = name;
+    return r;
+  });
+
+  // Replace if same name, else add
+  var idx = -1;
+  for (var i = 0; i < MONTHS.length; i++) { if (MONTHS[i].name === name) { idx = i; break; } }
+  var entry = { name:name, rows:scored, headers:parsed.headers };
+  if (idx >= 0) MONTHS[idx] = entry; else MONTHS.push(entry);
+
+  var avg = t2(scored.reduce(function(s,r){ return s+r._pct; },0) / scored.length);
+  showStatus('✅ โหลด "' + name + '" สำเร็จ — ' + scored.length + ' ราย | เฉลี่ย ' + fmt2(avg) + '%', true);
+
+  document.getElementById('rawTA').value = '';
+  activeMonth = name;
+  refreshAll();
+  goTab(1);
+}
+
+function showStatus(msg, ok) {
+  var el = document.getElementById('pasteStatus');
+  el.textContent = msg;
+  el.className = 'statusmsg show';
+  el.style.background = ok ? 'rgba(74,222,128,.08)' : 'rgba(248,113,113,.08)';
+  el.style.borderColor = ok ? 'rgba(74,222,128,.25)' : 'rgba(248,113,113,.25)';
+  el.style.color       = ok ? 'var(--green)' : 'var(--rose)';
+}
+
+function removeMonth(name) {
+  MONTHS = MONTHS.filter(function(m){ return m.name !== name; });
+  if (activeMonth === name) activeMonth = MONTHS.length ? MONTHS[MONTHS.length-1].name : null;
+  refreshAll();
+}
+
+// =========================================================
+// REFRESH ALL
+// =========================================================
+function refreshAll() {
+  var total = MONTHS.reduce(function(s,m){ return s+m.rows.length; }, 0);
+  document.getElementById('hbMonths').textContent = MONTHS.length + ' เดือน';
+  document.getElementById('hbTotal').textContent  = total + ' ราย';
+
+  // Month list card
+  var card = document.getElementById('monthListCard');
+  var body = document.getElementById('monthListBody');
+  if (MONTHS.length) {
+    card.style.display = '';
+    var html = '';
+    for (var i = 0; i < MONTHS.length; i++) {
+      var m = MONTHS[i];
+      var avg = t2(m.rows.reduce(function(s,r){ return s+r._pct; },0)/m.rows.length);
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">';
+      html += '<span style="font-size:1rem">📅</span>';
+      html += '<strong style="color:var(--teal);min-width:100px">' + m.name + '</strong>';
+      html += '<span style="color:var(--slate);font-size:.78rem">' + m.rows.length + ' ราย</span>';
+      html += '<span style="color:var(--green);font-size:.78rem;font-weight:700">เฉลี่ย ' + fmt2(avg) + '%</span>';
+      html += '<button class="btn btn-r" style="padding:3px 10px;font-size:.72rem;margin-left:auto" onclick="removeMonth(\'' + m.name + '\')">✕ ลบ</button>';
+      html += '</div>';
+    }
+    body.innerHTML = html;
+  } else { card.style.display = 'none'; }
+
+  buildFilterOpts();
+  buildMonthTabs();
+  renderTab1();
+  renderTab2();
+  renderTab3();
+}
+
+// =========================================================
+// FILTER OPTIONS
+// =========================================================
+function buildFilterOpts() {
+  var all = MONTHS.reduce(function(a,m){ return a.concat(m.rows); }, []);
+  var wards   = uniq(all.map(function(r){ return r['ตึก']||''; })).filter(Boolean).sort();
+  var depts   = uniq(all.map(function(r){ return r['กลุ่มงาน']||''; })).filter(Boolean).sort();
+  var doctors = uniq(all.map(function(r){ return r['ว.แพทย์']||''; })).filter(Boolean).sort();
+  var mnames  = MONTHS.map(function(m){ return m.name; });
+  fillSel('f1ward', wards); fillSel('f1dept', depts);
+  fillSel('f4month', mnames); fillSel('f3month', mnames); fillSel('f3ward', wards);
+  fillSel('f3dept', depts); fillSel('f3doc', doctors);
+}
+
+function fillSel(id, opts) {
+  var s = document.getElementById(id); if (!s) return;
+  var cur = s.value;
+  s.innerHTML = '<option value="">ทั้งหมด</option>';
+  for (var i = 0; i < opts.length; i++) {
+    var o = document.createElement('option');
+    o.value = o.textContent = opts[i];
+    s.appendChild(o);
+  }
+  if (Array.prototype.some.call(s.options, function(o){ return o.value===cur; })) s.value=cur;
+}
+
+function uniq(arr) {
+  var seen = {}, out = [];
+  for (var i=0;i<arr.length;i++) if (!seen[arr[i]]) { seen[arr[i]]=1; out.push(arr[i]); }
+  return out;
+}
+
+// =========================================================
+// MONTH TABS (tab1)
+// =========================================================
+function buildMonthTabs() {
+  var row = document.getElementById('monthTabsRow');
+  if (!MONTHS.length) { row.innerHTML=''; return; }
+  var html = '<button class="mtab mtab-all' + (activeMonth===null?' active':'') + '" onclick="setActiveMonth(null)">🏥 สะสมทุกเดือน</button>';
+  for (var i=0;i<MONTHS.length;i++) {
+    var m=MONTHS[i];
+    var cls = activeMonth===m.name?' active':'';
+    html += '<button class="mtab'+cls+'" onclick="setActiveMonth(\''+m.name+'\')">'+m.name+' <span style="color:var(--slate);font-weight:400">('+m.rows.length+')</span></button>';
+  }
+  row.innerHTML = html;
+}
+
+function setActiveMonth(name) {
+  activeMonth = name;
+  buildMonthTabs();
+  renderTab1();
+}
+
+// =========================================================
+// GET ACTIVE ROWS
+// =========================================================
+function getRows1() {
+  var base = activeMonth===null
+    ? MONTHS.reduce(function(a,m){ return a.concat(m.rows); }, [])
+    : (function(){ var mo=MONTHS.find(function(m){ return m.name===activeMonth; }); return mo?mo.rows:[]; })();
+  var fw = document.getElementById('f1ward').value;
+  var fd = document.getElementById('f1dept').value;
+  return base.filter(function(r){
+    if (fw && (r['ตึก']||'')!==fw) return false;
+    if (fd && (r['กลุ่มงาน']||'')!==fd) return false;
+    return true;
+  });
+}
+
+// =========================================================
+// TAB 1 – MONTHLY / CUMULATIVE
+// =========================================================
+var charts = {};
+var COLORS = ['#2dd4bf','#60a5fa','#a78bfa','#fbbf24','#f87171','#4ade80','#fb923c','#e879f9','#34d399','#f472b6'];
+
+function renderTab1() {
+  if (!MONTHS.length) return;
+  if (MONTHS.length > 0) buildScoreMap(G_HEADERS.length ? G_HEADERS : MONTHS[0].headers);
+
+  var rows = getRows1();
+  var label = activeMonth ? '"'+activeMonth+'"' : 'สะสมทุกเดือน ('+MONTHS.length+' เดือน)';
+  document.getElementById('summaryTitle').textContent = '📑 ตารางสรุป — ' + label;
+
+  // KPI
+  var n=rows.length;
+  var avgPct = n ? t2(rows.reduce(function(s,r){ return s+r._pct; },0)/n) : 0;
+  var pass = rows.filter(function(r){ return r._pct>=80; }).length;
+  document.getElementById('kpi1').innerHTML =
+    kpiHTML('c0',n,'เวชระเบียน','var(--teal)') +
+    kpiHTML('c5',fmt2(avgPct)+'%','% เฉลี่ย','var(--green)') +
+    kpiHTML('c1',pass,'ผ่าน ≥80%','var(--blue)') +
+    kpiHTML('c4',n-pass,'ไม่ผ่าน','var(--rose)') +
+    kpiHTML('c3',n?fmt2(t2(pass/n*100))+'%':'0%','% ผ่าน','var(--amber)');
+
+  // Bar chart
+  var barBy = document.getElementById('f1barBy').value;
+  var bCol = {ward:'ตึก',dept:'กลุ่มงาน',doctor:'ว.แพทย์'}[barBy]||'ตึก';
+  var bMap = groupBy(rows, bCol);
+  var bLabels = Object.keys(bMap).sort();
+  var bVals = bLabels.map(function(k){ return t2(bMap[k].reduce(function(s,r){ return s+r._pct; },0)/bMap[k].length); });
+  var bColors = bVals.map(function(v){ return v>=80?'rgba(74,222,128,.7)':v>=70?'rgba(251,191,36,.7)':'rgba(248,113,113,.7)'; });
+  mkChart('c1bar','bar',{labels:bLabels,datasets:[{data:bVals,backgroundColor:bColors,borderRadius:6,borderSkipped:false}]},barOpts());
+
+  // Cat chart
+  var catL = SCORE_COLS.map(shortCol);
+  var catV = SCORE_COLS.map(function(c){
+    var valid = rows.filter(function(r){ var v=(r[c]||'').toString().trim(); return v&&v.toUpperCase()!=='NA'&&!isNaN(Number(v)); });
+    if (!valid.length) return 0;
+    return t2(valid.reduce(function(s,r){ return s+Number((r[c]||'').toString().trim()); },0)/valid.length/(SCORE_MAP[c]||4)*100);
+  });
+  mkChart('c1cat','bar',{labels:catL,datasets:[{data:catV,backgroundColor:COLORS.map(function(c){ return c+'99'; }),borderColor:COLORS,borderWidth:1.5,borderRadius:5,borderSkipped:false}]},{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{backgroundColor:'#0d1117',bodyColor:'#e6edf3',callbacks:{label:function(c){ return ' '+fmt2(c.raw)+'%'; }}}},scales:{x:{min:0,max:100,ticks:{color:'#8b949e',font:{family:'Sarabun',size:10},callback:function(v){ return v+'%'; }},grid:{color:'rgba(255,255,255,0.05)'}},y:{ticks:{color:'#8b949e',font:{family:'Sarabun',size:10}},grid:{color:'rgba(255,255,255,0.05)'}}}});
+
+  // Summary table
+  var gCol = {ward:'ตึก',dept:'กลุ่มงาน',doctor:'ว.แพทย์'}[document.getElementById('f1group').value]||'ตึก';
+  buildSummaryTable(rows, gCol, 'sumHead', 'sumBody');
+  window._sum1 = { rows:rows, gCol:gCol };
+}
+
+function kpiHTML(cls, val, lbl, col) {
+  return '<div class="kpi '+cls+'"><div class="kpi-lbl">'+lbl+'</div><div class="kpi-val" style="color:'+col+'">'+val+'</div></div>';
+}
+
+// =========================================================
+// SUMMARY TABLE
+// =========================================================
+function buildSummaryTable(rows, gCol, headId, bodyId) {
+  if (!SCORE_COLS.length) return;
+  var sc = SCORE_COLS.map(shortCol);
+  document.getElementById(headId).innerHTML =
+    '<tr><th>กลุ่ม</th>'+sc.map(function(h){ return '<th>'+h+'</th>'; }).join('')+'<th>รวม</th></tr>';
+
+  var groups = groupBy(rows, gCol);
+  var gkeys  = Object.keys(groups).sort();
+  var hGot = zeros(SCORE_COLS.length), hMax = zeros(SCORE_COLS.length);
+  var html = '';
+
+  gkeys.forEach(function(gk) {
+    var rs = groups[gk];
+    var got = zeros(SCORE_COLS.length), max = zeros(SCORE_COLS.length);
+    rs.forEach(function(r) {
+      SCORE_COLS.forEach(function(c,i){
+        var v=(r[c]||'').toString().trim();
+        if(!v||v.toUpperCase()==='NA') return;
+        var n=Number(v); if(!isNaN(n)){ got[i]+=n; max[i]+=SCORE_MAP[c]||4; hGot[i]+=n; hMax[i]+=SCORE_MAP[c]||4; }
+      });
+    });
+    var tGot=sum(got), tMax=sum(max);
+    var tPct=tMax?t2(tGot/tMax*100):0;
+    var pcts=SCORE_COLS.map(function(_,i){ return max[i]?t2(got[i]/max[i]*100):null; });
+    var pc=tPct>=80?'var(--green)':tPct>=70?'var(--amber)':'var(--rose)';
+
+    html+='<tr class="row-got"><td class="grplabel" rowspan="3" style="border-left:3px solid '+pc+';padding-left:10px;vertical-align:middle">'+gk+'<br><small style="color:var(--slate);font-weight:400">'+rs.length+' ราย</small></td>';
+    html+=got.map(function(v){ return '<td>'+v+'</td>'; }).join('')+'<td>'+tGot+'</td></tr>';
+    html+='<tr class="row-max">'+max.map(function(v){ return '<td>'+v+'</td>'; }).join('')+'<td>'+tMax+'</td></tr>';
+    html+='<tr class="row-pct">'+pcts.map(function(p){ var cls=p===null?'sna':p>=80?'pct-g':p>=70?'pct-y':'pct-r'; return '<td class="'+cls+'">'+(p===null?'NA':fmt2(p)+'%')+'</td>'; }).join('')+'<td style="color:'+pc+'">'+fmt2(tPct)+'%</td></tr>';
+    html+='<tr class="row-sp"><td colspan="'+(SCORE_COLS.length+2)+'"></td></tr>';
+  });
+
+  var hGotT=sum(hGot), hMaxT=sum(hMax);
+  var hPct=hMaxT?t2(hGotT/hMaxT*100):0;
+  var hPcts=SCORE_COLS.map(function(_,i){ return hMax[i]?t2(hGot[i]/hMax[i]*100):null; });
+  html+='<tr class="row-hosp-got"><td class="grplabel" rowspan="3" style="border-left:3px solid var(--amber);padding-left:10px;vertical-align:middle">🏥 รวมทั้งหมด<br><small style="color:var(--slate)">'+rows.length+' ราย</small></td>';
+  html+=hGot.map(function(v){ return '<td>'+v+'</td>'; }).join('')+'<td>'+hGotT+'</td></tr>';
+  html+='<tr class="row-hosp-max">'+hMax.map(function(v){ return '<td>'+v+'</td>'; }).join('')+'<td>'+hMaxT+'</td></tr>';
+  html+='<tr class="row-hosp-pct">'+hPcts.map(function(p){ var cls=p===null?'sna':p>=80?'pct-g':p>=70?'pct-y':'pct-r'; return '<td class="'+cls+'">'+(p===null?'NA':fmt2(p)+'%')+'</td>'; }).join('')+'<td>'+fmt2(hPct)+'%</td></tr>';
+
+  document.getElementById(bodyId).innerHTML = html;
+}
+
+// =========================================================
+// TAB 2 – COMPARE
+// =========================================================
+function renderTab2() {
+  if (MONTHS.length < 1) return;
+  buildScoreMap(G_HEADERS.length ? G_HEADERS : MONTHS[0].headers);
+  var gCol = {ward:'ตึก',dept:'กลุ่มงาน',doctor:'ว.แพทย์'}[document.getElementById('f2group').value]||'ตึก';
+  var mNames = MONTHS.map(function(m){ return m.name; });
+
+  // Line: overall % per month
+  var lineV = MONTHS.map(function(m){ var n=m.rows.length; return n?t2(m.rows.reduce(function(s,r){ return s+r._pct; },0)/n):0; });
+  mkChart('c2line','line',{labels:mNames,datasets:[{label:'% เฉลี่ยรวม',data:lineV,borderColor:COLORS[0],backgroundColor:'rgba(45,212,191,.1)',tension:.4,fill:true,pointBackgroundColor:COLORS[0],pointRadius:5,pointHoverRadius:8}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#0d1117',bodyColor:'#e6edf3',callbacks:{label:function(c){ return ' '+fmt2(c.raw)+'%'; }}}},scales:{x:{ticks:{color:'#8b949e',font:{family:'Sarabun',size:11}},grid:{color:'rgba(255,255,255,0.05)'}},y:{min:0,max:100,ticks:{color:'#8b949e',font:{family:'Sarabun',size:10},callback:function(v){ return v+'%'; }},grid:{color:'rgba(255,255,255,0.05)'}}}});
+
+  // Grouped bar
+  var allRows = MONTHS.reduce(function(a,m){ return a.concat(m.rows); }, []);
+  var allGroups = uniq(allRows.map(function(r){ return (r[gCol]||'(ไม่ระบุ)').trim(); })).sort();
+  var ds = MONTHS.map(function(m,mi){
+    return {label:m.name,data:allGroups.map(function(gk){ var gr=m.rows.filter(function(r){ return (r[gCol]||'').trim()===gk; }); return gr.length?t2(gr.reduce(function(s,r){ return s+r._pct; },0)/gr.length):null; }),backgroundColor:COLORS[mi%COLORS.length]+'99',borderColor:COLORS[mi%COLORS.length],borderWidth:1.5,borderRadius:4,borderSkipped:false};
+  });
+  mkChart('c2bar','bar',{labels:allGroups,datasets:ds},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#8b949e',font:{family:'Sarabun',size:10}}},tooltip:{backgroundColor:'#0d1117',bodyColor:'#e6edf3',callbacks:{label:function(c){ return ' '+c.dataset.label+': '+(c.raw!==null?fmt2(c.raw)+'%':'—'); }}}},scales:{x:{ticks:{color:'#8b949e',font:{family:'Sarabun',size:9}},grid:{color:'rgba(255,255,255,0.05)'}},y:{min:0,max:100,ticks:{color:'#8b949e',font:{family:'Sarabun',size:10},callback:function(v){ return v+'%'; }},grid:{color:'rgba(255,255,255,0.05)'}}}});
+
+  // Donut
+  var pass=allRows.filter(function(r){ return r._pct>=80; }).length;
+  mkChart('c2donut','doughnut',{labels:['ผ่าน ≥80%','ไม่ผ่าน'],datasets:[{data:[pass,allRows.length-pass],backgroundColor:['rgba(74,222,128,.75)','rgba(248,113,113,.75)'],borderColor:['#4ade80','#f87171'],borderWidth:1.5,hoverOffset:6}]},{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{color:'#8b949e',font:{family:'Sarabun',size:11},padding:12}},tooltip:{backgroundColor:'#0d1117',bodyColor:'#e6edf3'}}});
+
+  // Compare table
+  var th='<tr><th>กลุ่ม</th>'+mNames.map(function(n){ return '<th>'+n+'</th>'; }).join('')+'<th>เฉลี่ยสะสม</th></tr>';
+  var tb='';
+  allGroups.forEach(function(gk){
+    var vals=MONTHS.map(function(m){ var gr=m.rows.filter(function(r){ return (r[gCol]||'').trim()===gk; }); return gr.length?t2(gr.reduce(function(s,r){ return s+r._pct; },0)/gr.length):null; });
+    var vn=vals.filter(function(v){ return v!==null; });
+    var avg=vn.length?t2(vn.reduce(function(a,b){ return a+b; },0)/vn.length):null;
+    var pc=function(v){ return v===null?'color:var(--slate)':v>=80?'color:var(--green)':v>=70?'color:var(--amber)':'color:var(--rose)'; };
+    tb+='<tr><td class="grplabel">'+gk+'</td>'+vals.map(function(v){ return '<td style="'+pc(v)+'">'+(v===null?'—':fmt2(v)+'%')+'</td>'; }).join('')+'<td style="'+pc(avg)+';font-weight:700">'+(avg===null?'—':fmt2(avg)+'%')+'</td></tr>';
+  });
+  var totV=MONTHS.map(function(m){ var n=m.rows.length; return n?t2(m.rows.reduce(function(s,r){ return s+r._pct; },0)/n):null; });
+  var totVn=totV.filter(function(v){ return v!==null; });
+  var totAvg=totVn.length?t2(totVn.reduce(function(a,b){ return a+b; },0)/totVn.length):null;
+  tb+='<tr style="background:rgba(251,191,36,.06);font-weight:800"><td class="grplabel" style="color:var(--amber)">🏥 รวมโรงพยาบาล</td>'+totV.map(function(v){ return '<td style="color:var(--amber)">'+(v===null?'—':fmt2(v)+'%')+'</td>'; }).join('')+'<td style="color:var(--amber)">'+(totAvg===null?'—':fmt2(totAvg)+'%')+'</td></tr>';
+  document.getElementById('cmpHead').innerHTML=th;
+  document.getElementById('cmpBody').innerHTML=tb;
+  window._cmp2={allGroups,MONTHS,mNames,totV,totAvg,gCol};
+}
+
+// =========================================================
+// TAB 3 – RAW
+// =========================================================
+function renderTab3() {
+  var fm=document.getElementById('f3month').value;
+  var fw=document.getElementById('f3ward').value;
+  var fd=document.getElementById('f3dept').value;
+  var fdr=document.getElementById('f3doc').value;
+  var rows=MONTHS.reduce(function(a,m){ return a.concat(m.rows); },[]).filter(function(r){
+    if(fm&&r._month!==fm) return false;
+    if(fw&&(r['ตึก']||'')!==fw) return false;
+    if(fd&&(r['กลุ่มงาน']||'')!==fd) return false;
+    if(fdr&&(r['ว.แพทย์']||'')!==fdr) return false;
+    return true;
+  });
+  document.getElementById('rawCnt').textContent=rows.length+' แถว';
+  if(!rows.length){ document.getElementById('rawBody').innerHTML='<tr><td colspan="20"><div class="empty">ไม่มีข้อมูล</div></td></tr>'; return; }
+
+  var hdrs=G_HEADERS.length?G_HEADERS:MONTHS[0].headers;
+  buildScoreMap(hdrs);
+  document.getElementById('rawHead').innerHTML='<tr><th>เดือน</th>'+hdrs.map(function(h){ return '<th>'+h+'</th>'; }).join('')+'<th>%</th></tr>';
+  document.getElementById('rawBody').innerHTML=rows.slice(0,300).map(function(r){
+    var cells=hdrs.map(function(h){
+      var v=r[h]!==undefined?r[h]:'';
+      if(SCORE_COLS.indexOf(h)>=0){
+        var vs=v.toString().trim();
+        if(vs.toUpperCase()==='NA') return '<td class="sc sna">NA</td>';
+        var n=Number(vs),mx=SCORE_MAP[h]||4;
+        var cls=!vs?'sna':n===mx?'sf':n>=mx*.75?'sh':n>=mx*.5?'sm':'sl';
+        return '<td class="sc '+cls+'">'+v+'</td>';
+      }
+      return '<td>'+v+'</td>';
+    }).join('');
+    var p=r._pct,pc=p>=90?'pba':p>=80?'pbb':p>=70?'pbc':'pbd';
+    return '<tr><td><strong style="color:var(--teal)">'+(r._month||'')+'</strong></td>'+cells+'<td><span class="pb '+pc+'">'+fmt2(p)+'%</span></td></tr>';
+  }).join('');
+  window._raw3=rows;
+}
+
+// =========================================================
+// CHART HELPERS
+// =========================================================
+function mkChart(id,type,data,opts){
+  if(charts[id]) charts[id].destroy();
+  var ctx=document.getElementById(id); if(!ctx) return;
+  charts[id]=new Chart(ctx.getContext('2d'),{type:type,data:data,options:opts});
+}
+function barOpts(){
+  return {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#0d1117',bodyColor:'#e6edf3',titleColor:'#8b949e',callbacks:{label:function(c){ return ' '+fmt2(c.raw)+'%'; }}}},scales:{x:{ticks:{color:'#8b949e',font:{family:'Sarabun',size:10}},grid:{color:'rgba(255,255,255,0.05)'}},y:{min:0,max:100,ticks:{color:'#8b949e',font:{family:'Sarabun',size:10},callback:function(v){ return v+'%'; }},grid:{color:'rgba(255,255,255,0.05)'}}}};
+}
+
+// =========================================================
+// UTILS
+// =========================================================
+function groupBy(rows,key){
+  var m={};
+  rows.forEach(function(r){ var k=(r[key]||'(ไม่ระบุ)').trim(); if(!m[k])m[k]=[]; m[k].push(r); });
+  return m;
+}
+function zeros(n){ var a=[]; for(var i=0;i<n;i++) a.push(0); return a; }
+function sum(a)  { return a.reduce(function(s,v){ return s+v; },0); }
+function goTab(n){
+  var tabs=[0,1,2,4,3]; // tab button order
+  [0,1,2,3,4].forEach(function(i){
+    var tb=document.getElementById('t'+i); if(tb) tb.className='tab'+(i===n?' on':'');
+    var pb=document.getElementById('p'+i); if(pb) pb.className='tabpane'+(i===n?' on':'');
+  });
+  if(n===1) renderTab1();
+  if(n===2) renderTab2();
+  if(n===3) renderTab3();
+  if(n===4) renderTab4();
+}
+
+
+// =========================================================
+// TAB 4 – ITEM BREAKDOWN (แยกรายข้อ 1-8)
+// =========================================================
+function renderTab4() {
+  if (!MONTHS.length) return;
+  buildScoreMap(G_HEADERS.length ? G_HEADERS : MONTHS[0].headers);
+  if (!SCORE_COLS.length) return;
+
+  var groupSel = document.getElementById('f4group').value;   // all | ward | dept | doctor
+  var mSel     = document.getElementById('f4month').value;   // '' = all months
+  var mode     = document.getElementById('f4mode').value;    // avg | pct | sum
+
+  var gColMap  = {ward:'ตึก', dept:'กลุ่มงาน', doctor:'ว.แพทย์'};
+  var gCol     = gColMap[groupSel] || null;
+
+  // Get rows for selected month
+  var allRows = MONTHS.reduce(function(a,m){ return a.concat(m.rows); }, []);
+  var rows = mSel ? allRows.filter(function(r){ return r._month === mSel; }) : allRows;
+
+  var modeLabel = mode==='avg' ? 'คะแนนเฉลี่ย' : mode==='pct' ? '% ของคะแนนเต็ม' : 'คะแนนรวม';
+  var groupLabel = groupSel==='all' ? 'ทั้งโรงพยาบาล' : {ward:'ตึก/วอร์ด',dept:'กลุ่มงาน',doctor:'ว.แพทย์'}[groupSel];
+  document.getElementById('item4Title').textContent      = '\uD83D\uDD22 ' + modeLabel + ' แต่ละข้อ — ' + groupLabel + (mSel?' ('+mSel+')':' (ทุกเดือน)');
+  document.getElementById('item4ChartTitle').textContent = '\uD83D\uDCCA ' + modeLabel + ' แต่ละข้อ แยกตาม' + groupLabel;
+
+  var sc = SCORE_COLS.map(shortCol);
+
+  // Determine groups
+  var groupKeys;
+  if (groupSel === 'all') {
+    groupKeys = ['ทั้งโรงพยาบาล'];
+  } else {
+    groupKeys = uniq(rows.map(function(r){ return (r[gCol]||'(ไม่ระบุ)').trim(); })).sort();
+  }
+
+  // Build data matrix: groupKeys × SCORE_COLS
+  function getGroupRows(gk) {
+    if (groupSel === 'all') return rows;
+    return rows.filter(function(r){ return (r[gCol]||'(ไม่ระบุ)').trim() === gk; });
+  }
+
+  function cellVal(rs, colIdx) {
+    var c = SCORE_COLS[colIdx];
+    var valid = rs.filter(function(r){
+      var v = (r[c]||'').toString().trim();
+      return v && v.toUpperCase() !== 'NA' && !isNaN(Number(v));
+    });
+    if (!valid.length) return null;
+    var mx = SCORE_MAP[c] || 4;
+    var got = valid.reduce(function(s,r){ return s + Number((r[c]||'').toString().trim()); }, 0);
+    if (mode === 'avg') return t2(got / valid.length);
+    if (mode === 'pct') return t2(got / valid.length / mx * 100);
+    return got; // sum
+  }
+
+  function hmClass(v, mx) {
+    if (v === null) return 'hm-na';
+    if (mode === 'pct') {
+      return v >= 90 ? 'hm-s' : v >= 80 ? 'hm-a' : v >= 70 ? 'hm-b' : 'hm-c';
+    } else if (mode === 'avg') {
+      var pct = v / mx * 100;
+      return pct >= 90 ? 'hm-s' : pct >= 80 ? 'hm-a' : pct >= 70 ? 'hm-b' : 'hm-c';
+    }
+    return ''; // sum - no color
+  }
+
+  function fmtCell(v) {
+    if (v === null) return 'NA';
+    if (mode === 'pct') return fmt2(v) + '%';
+    return fmt2(v);
+  }
+
+  // Table header
+  var maxRow = '<tr><th style="min-width:50px">คะแนนเต็ม</th>' +
+    SCORE_COLS.map(function(c){ return '<th>' + SCORE_MAP[c] + '</th>'; }).join('') +
+    '<th>' + SCORE_COLS.reduce(function(s,c){ return s+(SCORE_MAP[c]||4); },0) + '</th></tr>';
+
+  document.getElementById('item4Head').innerHTML =
+    '<tr><th>กลุ่ม</th>' + sc.map(function(h){ return '<th>' + h + '</th>'; }).join('') + '<th>รวม/เฉลี่ย</th></tr>' + maxRow;
+
+  // Table body
+  var html = '';
+  var chartDatasets = [];
+
+  groupKeys.forEach(function(gk, gi) {
+    var rs = getGroupRows(gk);
+    var vals = SCORE_COLS.map(function(_, i){ return cellVal(rs, i); });
+
+    // Total/overall for this group
+    var totalGot = 0, totalMax = 0;
+    rs.forEach(function(r){
+      SCORE_COLS.forEach(function(c){
+        var v=(r[c]||'').toString().trim();
+        if(!v||v.toUpperCase()==='NA') return;
+        var n=Number(v); if(!isNaN(n)){totalGot+=n; totalMax+=SCORE_MAP[c]||4;}
+      });
+    });
+    var totalVal = totalMax ? (mode==='avg' ? t2(totalGot/rs.filter(function(r){ return r._got>0; }).length||rs.length) : mode==='pct' ? t2(totalGot/totalMax*100) : totalGot) : null;
+
+    var rowCls = groupSel==='all' ? 'row-item-hosp' : '';
+    html += '<tr class="' + rowCls + '">';
+    html += '<td class="grplabel" style="border-left:3px solid ' + (gi<COLORS.length?COLORS[gi]:'var(--teal)') + ';padding-left:10px">' + gk + '<br><small style="color:var(--slate);font-weight:400">' + rs.length + ' ราย</small></td>';
+    html += vals.map(function(v, i){
+      var mx = SCORE_MAP[SCORE_COLS[i]] || 4;
+      var cls = hmClass(v, mx);
+      return '<td class="hm-cell ' + cls + '">' + fmtCell(v) + '</td>';
+    }).join('');
+    // summary cell
+    var sumPct = totalMax ? t2(totalGot/totalMax*100) : 0;
+    var sumCls = sumPct>=90?'hm-s':sumPct>=80?'hm-a':sumPct>=70?'hm-b':'hm-c';
+    var sumTxt = mode==='pct' ? fmt2(sumPct)+'%' : mode==='avg' ? fmt2(t2(totalGot/(rs.length||1))) : totalGot;
+    html += '<td class="hm-cell ' + sumCls + '" style="font-size:.82rem">' + sumTxt + '</td>';
+    html += '</tr>';
+
+    // Dataset for chart
+    chartDatasets.push({
+      label: gk,
+      data: vals.map(function(v){ return v !== null ? v : 0; }),
+      backgroundColor: (COLORS[gi % COLORS.length]) + 'aa',
+      borderColor: COLORS[gi % COLORS.length],
+      borderWidth: 1.5,
+      borderRadius: 5,
+      borderSkipped: false
+    });
+  });
+
+  // If showing by group, also add hospital total row
+  if (groupSel !== 'all') {
+    var hGot = zeros(SCORE_COLS.length), hMax = zeros(SCORE_COLS.length);
+    rows.forEach(function(r){
+      SCORE_COLS.forEach(function(c,i){
+        var v=(r[c]||'').toString().trim();
+        if(!v||v.toUpperCase()==='NA') return;
+        var n=Number(v); if(!isNaN(n)){hGot[i]+=n; hMax[i]+=SCORE_MAP[c]||4;}
+      });
+    });
+    var hVals = SCORE_COLS.map(function(_,i){
+      if (!hMax[i]) return null;
+      if (mode==='avg') return t2(hGot[i] / rows.filter(function(r){ var v=(r[SCORE_COLS[i]]||'').toString().trim(); return v&&v.toUpperCase()!=='NA'&&!isNaN(Number(v)); }).length);
+      if (mode==='pct') return t2(hGot[i]/hMax[i]*100);
+      return hGot[i];
+    });
+    var hTotGot=sum(hGot), hTotMax=sum(hMax);
+    var hSumPct=hTotMax?t2(hTotGot/hTotMax*100):0;
+    var hSumCls=hSumPct>=90?'hm-s':hSumPct>=80?'hm-a':hSumPct>=70?'hm-b':'hm-c';
+    var hSumTxt=mode==='pct'?fmt2(hSumPct)+'%':mode==='avg'?fmt2(t2(hTotGot/(rows.length||1))):hTotGot;
+    html += '<tr class="row-item-hosp"><td class="grplabel" style="border-left:3px solid var(--amber);padding-left:10px">🏥 ทั้งโรงพยาบาล<br><small style="color:var(--slate);font-weight:400">'+rows.length+' ราย</small></td>';
+    html += hVals.map(function(v,i){
+      var mx=SCORE_MAP[SCORE_COLS[i]]||4;
+      var cls=hmClass(v,mx);
+      return '<td class="hm-cell '+cls+'">'+fmtCell(v)+'</td>';
+    }).join('');
+    html += '<td class="hm-cell '+hSumCls+'">'+hSumTxt+'</td></tr>';
+  }
+
+  document.getElementById('item4Body').innerHTML = html;
+
+  // Chart: grouped bar (groups as datasets, items as x-axis)
+  // If too many groups, show only top N by total score
+  var dsToShow = chartDatasets.length > 8 ? chartDatasets.slice(0,8) : chartDatasets;
+  var yMax = mode === 'pct' ? 100 : mode === 'avg' ? 4 : undefined;
+  var ySuffix = mode === 'pct' ? '%' : '';
+
+  mkChart('c4bar', 'bar', {
+    labels: sc,
+    datasets: dsToShow
+  }, {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: groupSel!=='all', labels: { color:'#8b949e', font:{family:'Sarabun',size:10}, boxWidth:12 } },
+      tooltip: { backgroundColor:'#0d1117', bodyColor:'#e6edf3', titleColor:'#8b949e',
+        callbacks: { label: function(c){ return ' '+c.dataset.label+': '+(c.raw!==null?fmt2(c.raw)+ySuffix:'NA'); } }
+      }
+    },
+    scales: {
+      x: { ticks:{color:'#8b949e',font:{family:'Sarabun',size:10}}, grid:{color:'rgba(255,255,255,0.05)'} },
+      y: { min:0, max:yMax, ticks:{color:'#8b949e',font:{family:'Sarabun',size:10},callback:function(v){ return v+ySuffix; }}, grid:{color:'rgba(255,255,255,0.05)'} }
+    }
+  });
+
+  window._item4 = { rows:rows, groupSel:groupSel, gCol:gCol, mode:mode, groupKeys:groupKeys };
+}
+
+function exportItem4CSV() {
+  var d = window._item4; if(!d) return;
+  var sc = SCORE_COLS.map(shortCol);
+  var mode = d.mode;
+  var lines = ['\uFEFF' + ['กลุ่ม','จำนวน',...sc,'รวม/เฉลี่ย'].join(',')];
+
+  d.groupKeys.forEach(function(gk){
+    var rs = d.groupSel==='all' ? d.rows : d.rows.filter(function(r){ return (r[d.gCol]||'(ไม่ระบุ)').trim()===gk; });
+    var vals = SCORE_COLS.map(function(_,i){
+      var c=SCORE_COLS[i];
+      var valid=rs.filter(function(r){ var v=(r[c]||'').toString().trim(); return v&&v.toUpperCase()!=='NA'&&!isNaN(Number(v)); });
+      if(!valid.length) return 'NA';
+      var got=valid.reduce(function(s,r){ return s+Number((r[c]||'').toString().trim()); },0);
+      var mx=SCORE_MAP[c]||4;
+      if(mode==='avg') return fmt2(t2(got/valid.length));
+      if(mode==='pct') return fmt2(t2(got/valid.length/mx*100))+'%';
+      return got;
+    });
+    var tGot=0,tMax=0;
+    rs.forEach(function(r){ SCORE_COLS.forEach(function(c){ var v=(r[c]||'').toString().trim(); if(!v||v.toUpperCase()==='NA') return; var n=Number(v); if(!isNaN(n)){tGot+=n;tMax+=SCORE_MAP[c]||4;} }); });
+    var tot=tMax?(mode==='pct'?fmt2(t2(tGot/tMax*100))+'%':mode==='avg'?fmt2(t2(tGot/(rs.length||1))):tGot):'NA';
+    lines.push(['"'+gk+'"',rs.length,...vals,tot].join(','));
+  });
+  dl(lines.join('\n'),'item_breakdown.csv');
+}
+
+// =========================================================
+// EXPORTS
+// =========================================================
+function exportSummaryCSV(){
+  var d=window._sum1; if(!d||!d.rows.length) return;
+  var rows=d.rows,gCol=d.gCol;
+  var sc=SCORE_COLS.map(shortCol);
+  var lines=['\uFEFF'+[gCol,'ประเภท',...sc,'รวม'].join(',')];
+  var groups=groupBy(rows,gCol);
+  Object.keys(groups).sort().forEach(function(gk){
+    var rs=groups[gk];
+    var got=zeros(SCORE_COLS.length),max=zeros(SCORE_COLS.length);
+    rs.forEach(function(r){ SCORE_COLS.forEach(function(c,i){ var v=(r[c]||'').toString().trim(); if(!v||v.toUpperCase()==='NA') return; var n=Number(v); if(!isNaN(n)){got[i]+=n;max[i]+=SCORE_MAP[c]||4;} }); });
+    var tG=sum(got),tM=sum(max),tP=tM?t2(tG/tM*100):0;
+    var pcts=SCORE_COLS.map(function(_,i){ return max[i]?fmt2(t2(got[i]/max[i]*100))+'%':'NA'; });
+    lines.push(['"'+gk+'"','คะแนนที่ได้',...got,tG].join(','));
+    lines.push(['"'+gk+'"','คะแนนเต็ม',...max,tM].join(','));
+    lines.push(['"'+gk+'"','%',...pcts,fmt2(tP)+'%'].join(','));
+    lines.push(['"'+gk+'"','',...zeros(SCORE_COLS.length+1)].join(','));
+  });
+  dl(lines.join('\n'),'summary.csv');
+}
+function exportCompareCSV(){
+  var d=window._cmp2; if(!d) return;
+  var lines=['\uFEFF'+[d.gCol,...d.mNames,'เฉลี่ยสะสม'].join(',')];
+  d.allGroups.forEach(function(gk){
+    var vals=d.MONTHS.map(function(m){ var gr=m.rows.filter(function(r){ return (r[d.gCol]||'').trim()===gk; }); return gr.length?fmt2(t2(gr.reduce(function(s,r){ return s+r._pct; },0)/gr.length))+'%':'—'; });
+    var vn=d.MONTHS.map(function(m){ var gr=m.rows.filter(function(r){ return (r[d.gCol]||'').trim()===gk; }); return gr.length?t2(gr.reduce(function(s,r){ return s+r._pct; },0)/gr.length):null; }).filter(function(v){ return v!==null; });
+    var avg=vn.length?fmt2(t2(vn.reduce(function(a,b){ return a+b; },0)/vn.length))+'%':'—';
+    lines.push(['"'+gk+'"',...vals,avg].join(','));
+  });
+  dl(lines.join('\n'),'compare.csv');
+}
+function exportRawCSV(){
+  var rows=window._raw3; if(!rows||!rows.length) return;
+  var hdrs=G_HEADERS.length?G_HEADERS:MONTHS[0].headers;
+  var lines=['\uFEFF'+['เดือน',...hdrs,'%'].join(','),...rows.map(function(r){ return ['"'+(r._month||'')+'"',...hdrs.map(function(h){ return '"'+((r[h]||'').toString().replace(/"/g,'""'))+'"'; }),fmt2(r._pct)+'%'].join(','); })];
+  dl(lines.join('\n'),'raw.csv');
+}
+function dl(content,filename){
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'}));
+  a.download=filename; a.click();
+}
+
+// DEMO
+function loadDemo(){
+  document.getElementById('monthNameInput').value='ต.ค.2568';
+  document.getElementById('rawTA').value='ลำดับ\tAN\tวันที่\tว.แพทย์\tกลุ่มงาน\tตึก\t1.Discharge Summary (4)\t2.Discharge Summary (3)\t3.ประวัติการเจ็บป่วย (4)\t4.ผลตรวจร่างกาย (4)\t5.Progress Note (4)\t6.บันทึกการผ่าตัด (4)\t7.บันทึกการคลอด (4)\t8.Nurse\'Note (4)\tเอาลงชีท\tปัญหา\n1\t41456/68\t13/10/2568\tพ.พิมลศรี\tกุมารเวชกรรม\tกุมารเวชกรรม1\t4\t3\t4\t3\t2\tNA\tNA\t3\tลงแล้ว\t3H04\n2\t41552/68\t10/10/2568\tพ.สกลกานณ์\tกุมารเวชกรรม\tกุมารเวชกรรม1\t4\t3\t3\t4\t3\tNA\tNA\t3\tลงแล้ว\t3H08\n3\t41600/68\t15/10/2568\tพ.สมชาย\tอายุรกรรม\tอายุรกรรม1\t4\t3\t4\t4\t4\tNA\tNA\t4\tลงแล้ว\t-\n4\t41700/68\t20/10/2568\tพ.วิภา\tศัลยกรรม\tศัลยกรรม1\t4\t3\t4\t4\t4\t4\tNA\t4\tลงแล้ว\t-\n5\t41800/68\t25/10/2568\tพ.อรุณ\tสูตินรีเวช\tสูติกรรม\t4\t3\t4\t4\t4\tNA\t4\t4\tลงแล้ว\t-';
+}
+</script>
+</body>
+</html>
