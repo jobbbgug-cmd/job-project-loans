@@ -17014,3 +17014,5 @@
 {"timestamp":"2026-05-02T07:57:44.470Z","level":"info","message":"Tool invocation started","correlationId":"b6ea5229-4bdf-4348-90a3-38b470eca892","tool":"testsprite_generate_frontend_test_plan"}
 {"timestamp":"2026-05-02T07:57:44.491Z","level":"debug","message":"Generate frontend test plan params","correlationId":"b6ea5229-4bdf-4348-90a3-38b470eca892","tool":"testsprite_generate_frontend_test_plan","context":{"projectPath":"/Users/jobmac/Documents/nextjd-testsprite","needLogin":true}}
 {"timestamp":"2026-05-02T07:58:28.288Z","level":"info","message":"Tool invocation completed","correlationId":"b6ea5229-4bdf-4348-90a3-38b470eca892","tool":"testsprite_generate_frontend_test_plan"}
+{"timestamp":"2026-05-15T02:51:07.812Z","level":"info","message":"Tool invocation started","correlationId":"cdb9449a-b420-4067-a283-62ad705dbfcd","tool":"testsprite_check_account_info"}
+{"timestamp":"2026-05-15T02:51:07.814Z","level":"info","message":"Tool invocation completed","correlationId":"cdb9449a-b420-4067-a283-62ad705dbfcd","tool":"testsprite_check_account_info"}
