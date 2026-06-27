@@ -1,7 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import ThaiDatePicker from '@/components/ThaiDatePicker';
+import { Fragment, useState, useEffect, useRef } from 'react';
+
+interface SubRow {
+  name: string;
+  handicap: string;
+  odds: string;
+  score: string;
+  scoreFinal: string;
+  result: string;
+}
 
 interface Row {
   date: string;
@@ -12,6 +20,7 @@ interface Row {
   scoreFinal: string;
   betAmount: string;
   result: string;
+  children?: SubRow[];
 }
 
 function todayStr() {
@@ -59,7 +68,34 @@ function copyText(text: string) {
 
 function r2(n: number) { return Math.round(n * 100) / 100; }
 
+function stepFactor(result: string, odds: number): number | null {
+  switch (result) {
+    case 'win_full':  return odds;
+    case 'win_half':  return (odds + 1) / 2;
+    case 'lose_full': return 0;
+    case 'lose_half': return 0.5;
+    case 'draw':      return 1;
+    default:          return null;
+  }
+}
+
+function calcStepReturn(bet: number, children: SubRow[]): number | null {
+  if (!children.length || !bet || bet <= 0) return null;
+  let factor = 1;
+  for (const sub of children) {
+    if (!sub.result) return null;
+    const f = stepFactor(sub.result, Number(sub.odds));
+    if (f === null) return null;
+    if (f === 0) return 0;
+    factor *= f;
+  }
+  return r2(bet * factor);
+}
+
 function calcSummary(row: Row): number | null {
+  if ((row.children ?? []).length > 0) {
+    return calcStepReturn(Number(row.betAmount), row.children ?? []);
+  }
   const bet  = Number(row.betAmount);
   const odds = Number(row.odds);
   if (!bet || bet <= 0 || !row.result) return null;
@@ -88,12 +124,12 @@ const RESULT_OPTIONS = [
 ];
 
 const RESULT_STYLES: Record<string, string> = {
-  win_full:  'bg-emerald-500/15 text-emerald-400',
-  win_half:  'bg-emerald-500/10 text-emerald-300',
-  lose_full: 'bg-red-500/15 text-red-400',
-  lose_half: 'bg-red-500/10 text-red-300',
-  draw:      'bg-yellow-500/15 text-yellow-400',
-  '':        'bg-slate-700/50 text-slate-400',
+  win_full:  'bg-emerald-500/30 text-emerald-200 ring-1 ring-emerald-400/60 font-semibold',
+  win_half:  'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40',
+  lose_full: 'bg-red-500/30 text-red-200 ring-1 ring-red-400/60 font-semibold',
+  lose_half: 'bg-red-500/20 text-red-300 ring-1 ring-red-500/40',
+  draw:      'bg-yellow-500/25 text-yellow-200 ring-1 ring-yellow-400/50',
+  '':        'bg-slate-700/60 text-slate-300',
 };
 
 function parseBetAmountLine(line: string): { name: string; amount: string } | null {
@@ -144,8 +180,6 @@ export default function ParserPage() {
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiveError, setArchiveError] = useState('');
   const [savingImage, setSavingImage] = useState(false);
-  const [fetchingLine, setFetchingLine] = useState(false);
-  const [lineMsg, setLineMsg] = useState<string | null>(null);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   async function loadDraftFromServer() {
     try {
@@ -236,6 +270,7 @@ export default function ParserPage() {
     });
     setRows(updated);
     setSaved(false);
+    setBetInput('');
     setMatchMsg(`จับคู่ได้ ${matched} จาก ${entries.length} รายการ`);
     setTimeout(() => setMatchMsg(null), 3000);
   }
@@ -316,33 +351,6 @@ export default function ParserPage() {
     fetch('/api/loan/parser-draft', { method: 'DELETE' }).catch(() => {});
   }
 
-  async function fetchLineMessages() {
-    setFetchingLine(true);
-    setLineMsg(null);
-    try {
-      const res = await fetch('/api/loan/line-messages');
-      const data = await res.json().catch(() => ([])) as { id: number; display_name: string | null; message: string }[];
-      if (!Array.isArray(data) || data.length === 0) {
-        setLineMsg('ไม่มีข้อความใหม่จาก LINE');
-        return;
-      }
-      const text = data.map(d => d.message).join('\n');
-      setInput(prev => prev ? prev + '\n' + text : text);
-      setLineMsg(`ดึงได้ ${data.length} ข้อความ`);
-      // mark as used
-      await fetch('/api/loan/line-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: data.map(d => d.id) }),
-      });
-    } catch {
-      setLineMsg('เกิดข้อผิดพลาด');
-    } finally {
-      setFetchingLine(false);
-      setTimeout(() => setLineMsg(null), 3000);
-    }
-  }
-
   function handleCopy(label: string, text: string) {
     copyText(text);
     setCopied(label);
@@ -369,6 +377,44 @@ export default function ParserPage() {
   }
 
   function cancelEdit() { setEditingIdx(null); }
+
+  function addEmptyRow() {
+    const newRow: Row = { date: todayStr(), name: '', handicap: '', odds: '', score: '', scoreFinal: '', betAmount: '', result: '' };
+    const newIdx = rows.length;
+    setRows(prev => [...prev, newRow]);
+    setEditForm(newRow);
+    setEditingIdx(newIdx);
+    setSaved(false);
+  }
+
+  function addSubRow(i: number) {
+    setRows(prev => {
+      const a = [...prev];
+      a[i] = { ...a[i], children: [...(a[i].children ?? []), { name: '', handicap: '', odds: '', score: '', scoreFinal: '', result: '' }] };
+      return a;
+    });
+    setSaved(false);
+  }
+
+  function updateSubRow(i: number, j: number, field: keyof SubRow, value: string) {
+    setRows(prev => {
+      const a = [...prev];
+      const ch = [...(a[i].children ?? [])];
+      ch[j] = { ...ch[j], [field]: value };
+      a[i] = { ...a[i], children: ch };
+      return a;
+    });
+    setSaved(false);
+  }
+
+  function deleteSubRow(i: number, j: number) {
+    setRows(prev => {
+      const a = [...prev];
+      a[i] = { ...a[i], children: (a[i].children ?? []).filter((_, idx) => idx !== j) };
+      return a;
+    });
+    setSaved(false);
+  }
 
   function updateCell(i: number, field: keyof Row, value: string) {
     setRows(prev => { const a = [...prev]; a[i] = { ...a[i], [field]: value }; return a; });
@@ -553,16 +599,11 @@ export default function ParserPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={fetchLineMessages}
-                  disabled={fetchingLine}
-                  className="flex items-center gap-1.5 text-xs bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-500/30 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
+                  onClick={async () => { try { const t = await navigator.clipboard.readText(); setInput(t); } catch { /* ignore */ } }}
+                  className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
                 >
-                  {fetchingLine ? (
-                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-                  ) : (
-                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M19.952 1.651a.75.75 0 01.298.844l-7.5 21a.75.75 0 01-1.407-.042l-2.41-7.81-7.81-2.41a.75.75 0 01-.042-1.407l21-7.5a.75.75 0 01.871.325z"/></svg>
-                  )}
-                  ดึงจาก LINE
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  วาง
                 </button>
                 <button
                   type="button"
@@ -573,9 +614,6 @@ export default function ParserPage() {
                 </button>
               </div>
             </div>
-            {lineMsg && (
-              <p className={`text-xs ${lineMsg.startsWith('ไม่มี') || lineMsg.startsWith('เกิด') ? 'text-slate-400' : 'text-green-400'}`}>{lineMsg}</p>
-            )}
             <textarea
               value={input}
               onChange={e => { setInput(e.target.value); setNewCount(0); }}
@@ -599,13 +637,23 @@ export default function ParserPage() {
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-slate-300">ข้อมูลจำนวนเงินที่แทง</label>
-              <button
-                type="button"
-                onClick={() => { setBetInput(''); setMatchMsg(null); }}
-                className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                ล้าง
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => { try { const t = await navigator.clipboard.readText(); setBetInput(t); } catch { /* ignore */ } }}
+                  className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  วาง
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setBetInput(''); setMatchMsg(null); }}
+                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  ล้าง
+                </button>
+              </div>
             </div>
             <textarea
               value={betInput}
@@ -685,6 +733,13 @@ export default function ParserPage() {
                   )}
                 </button>
                 <button
+                  onClick={addEmptyRow}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-400 border border-slate-600 hover:border-emerald-500/40 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  เพิ่มรายการเปล่า
+                </button>
+                <button
                   onClick={clearAll}
                   className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 border border-slate-700 hover:border-red-500/40 px-3 py-1.5 rounded-lg transition-colors"
                 >
@@ -725,34 +780,82 @@ export default function ParserPage() {
                       </div>
                     </div>
                     {/* สกอร์(จบ) + จำนวนเงิน + ผลลัพธ์ — one row */}
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <div>
-                        <p className="text-slate-500 text-xs mb-1">สกอร์(จบ)</p>
-                        <input value={row.scoreFinal} onChange={e => updateCell(i, 'scoreFinal', e.target.value)}
-                          placeholder="0-0" className="w-full rounded-lg bg-slate-700 border border-slate-600 px-2 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-mono" />
-                      </div>
-                      <div>
-                        <p className="text-slate-500 text-xs mb-1">จำนวนเงิน</p>
-                        <input type="number" min={0} value={row.betAmount} onChange={e => updateCell(i, 'betAmount', e.target.value)}
-                          placeholder="0" className="w-full rounded-lg bg-slate-700 border border-slate-600 px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-mono" />
-                      </div>
-                      <div>
-                        <p className="text-slate-500 text-xs mb-1">ผลลัพธ์</p>
-                        <select value={row.result} onChange={e => updateCell(i, 'result', e.target.value)}
-                          className={`w-full rounded-lg px-1 py-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-yellow-500 ${RESULT_STYLES[row.result] ?? RESULT_STYLES['']}`}>
-                          {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
-                      </div>
-                    </div>
+                    {(() => {
+                      const hasChildren = (row.children ?? []).length > 0;
+                      return hasChildren ? (
+                        <div className="flex justify-center">
+                          <div className="w-1/2">
+                            <p className="text-slate-500 text-xs mb-1 text-center">จำนวนเงิน</p>
+                            <input type="number" min={0} value={row.betAmount} onChange={e => updateCell(i, 'betAmount', e.target.value)}
+                              placeholder="0" className="w-full rounded-lg bg-slate-700 border border-slate-600 px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-mono" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <div>
+                            <p className="text-slate-500 text-xs mb-1">สกอร์(จบ)</p>
+                            <input value={row.scoreFinal} onChange={e => updateCell(i, 'scoreFinal', e.target.value)}
+                              placeholder="0-0" className="w-full rounded-lg bg-slate-700 border border-slate-600 px-2 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-mono" />
+                          </div>
+                          <div>
+                            <p className="text-slate-500 text-xs mb-1">จำนวนเงิน</p>
+                            <input type="number" min={0} value={row.betAmount} onChange={e => updateCell(i, 'betAmount', e.target.value)}
+                              placeholder="0" className="w-full rounded-lg bg-slate-700 border border-slate-600 px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-mono" />
+                          </div>
+                          <div>
+                            <p className="text-slate-500 text-xs mb-1">ผลลัพธ์</p>
+                            <select value={row.result} onChange={e => updateCell(i, 'result', e.target.value)}
+                              className={`w-full rounded-lg px-1 py-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-yellow-500 ${RESULT_STYLES[row.result] ?? RESULT_STYLES['']}`}>
+                              {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {/* ผลสรุป */}
-                    {sv !== null && (
-                      <div className="flex items-center justify-end gap-2">
-                        <span className="text-xs text-slate-400">ผลสรุป</span>
-                        <span className={`font-mono text-base font-bold ${row.result === 'draw' ? 'text-yellow-400' : sv > 0 ? 'text-emerald-400' : sv === 0 ? 'text-red-400' : 'text-slate-300'}`}>
-                          ฿{fmtSummary(sv)}
-                        </span>
+                    {sv !== null && (() => {
+                      const isStep = (row.children ?? []).length > 0;
+                      const svColor = isStep
+                        ? (sv > Number(row.betAmount) ? 'text-emerald-400' : sv === 0 ? 'text-red-400' : 'text-orange-400')
+                        : (row.result === 'draw' ? 'text-yellow-400' : sv > 0 ? 'text-emerald-400' : sv === 0 ? 'text-red-400' : 'text-slate-300');
+                      return (
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-xs text-slate-400">{isStep ? 'กำไรรวมต้นทุน' : 'ผลสรุป'}</span>
+                          <span className={`font-mono text-base font-bold ${svColor}`}>฿{fmtSummary(sv)}</span>
+                        </div>
+                      );
+                    })()}
+                    {/* Sub-rows (mobile) */}
+                    {(row.children ?? []).length > 0 && (
+                      <div className="border-t border-slate-700/50 pt-2 space-y-1.5">
+                        {(row.children ?? []).map((sub, j) => (
+                          <div key={j} className="flex items-center gap-1.5 bg-slate-800/60 rounded-lg px-2 py-1.5">
+                            <span className="text-slate-500 text-[10px] font-mono shrink-0">{i + 1}.{j + 1}</span>
+                            <input value={sub.name} onChange={e => updateSubRow(i, j, 'name', e.target.value)}
+                              placeholder="ชื่อ" className="flex-1 min-w-0 bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none" />
+                            <input value={sub.handicap} onChange={e => updateSubRow(i, j, 'handicap', e.target.value)}
+                              placeholder="ต่อ" className="w-10 bg-transparent text-xs text-yellow-300 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
+                            <input value={sub.odds} onChange={e => updateSubRow(i, j, 'odds', e.target.value)}
+                              placeholder="น้ำ" className="w-10 bg-transparent text-xs text-sky-300 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
+                            <input value={sub.score} onChange={e => updateSubRow(i, j, 'score', e.target.value)}
+                              placeholder="สกอร์" className="w-12 bg-transparent text-xs text-emerald-200 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
+                            <select value={sub.result} onChange={e => updateSubRow(i, j, 'result', e.target.value)}
+                              className={`rounded px-1 py-0.5 text-[10px] border-0 focus:outline-none shrink-0 ${RESULT_STYLES[sub.result] ?? RESULT_STYLES['']}`}>
+                              {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            </select>
+                            <button onClick={() => deleteSubRow(i, j)} className="p-0.5 text-slate-600 hover:text-red-400 transition-colors shrink-0">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
+                    {/* Add sub-row button (mobile) */}
+                    <button onClick={() => addSubRow(i)}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-500 hover:text-emerald-400 border border-dashed border-slate-700 hover:border-emerald-500/40 rounded-lg transition-colors">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      เพิ่มรายการย่อ
+                    </button>
                   </div>
                 );
               })}
@@ -784,8 +887,8 @@ export default function ParserPage() {
                 <thead>
                   <tr className="border-b border-slate-700 text-slate-400 text-xs">
                     <th className="px-3 py-3 text-left font-medium w-8">#</th>
-                    <th className="px-3 py-3 text-left font-medium w-px">วันที่</th>
-                    <th className="px-3 py-3 text-left font-medium">ชื่อ</th>
+                    <th className="px-2 py-3 text-left font-medium w-px whitespace-nowrap">วันที่</th>
+                    <th className="px-3 py-3 text-left font-medium min-w-[220px]">ชื่อ</th>
                     <th className="px-3 py-3 text-center font-medium">ราคาต่อ</th>
                     <th className="px-3 py-3 text-center font-medium">ราคาน้ำ</th>
                     <th className="px-3 py-3 text-center font-medium">สกอร์(ก่อน)</th>
@@ -800,17 +903,16 @@ export default function ParserPage() {
                   {rows.map((row, i) => {
                     const isEditing = editingIdx === i;
                     return (
-                      <tr key={i} className={`transition-colors whitespace-nowrap ${isEditing ? 'bg-slate-700/50' : 'hover:bg-slate-700/30'}`}>
+                      <Fragment key={i}>
+                      <tr className={`transition-colors whitespace-nowrap ${isEditing ? 'bg-slate-700/50' : 'hover:bg-slate-700/30'}`}>
                         <td className="px-3 py-2.5 text-slate-500 text-xs">{i + 1}</td>
 
                         {isEditing ? (
                           <>
-                            <td className="px-3 py-2">
-                              <ThaiDatePicker value={editForm.date} onChange={v => setEditForm(f => ({ ...f, date: v }))} className="text-xs" />
-                            </td>
+                            <td className="px-2 py-2 text-slate-400 text-xs whitespace-nowrap">{fmtDate(editForm.date)}</td>
                             <td className="px-3 py-2">
                               <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                                className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" />
+                                className="w-full min-w-[180px] bg-slate-600 border border-slate-500 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" />
                             </td>
                             <td className="px-3 py-2">
                               <input value={editForm.handicap} onChange={e => setEditForm(f => ({ ...f, handicap: e.target.value }))}
@@ -854,9 +956,7 @@ export default function ParserPage() {
                           </>
                         ) : (
                           <>
-                            <td className="px-3 py-2.5">
-                              <ThaiDatePicker value={row.date} onChange={v => updateCell(i, 'date', v)} className="text-xs" />
-                            </td>
+                            <td className="px-2 py-2.5 text-slate-400 text-xs whitespace-nowrap">{fmtDate(row.date)}</td>
                             <td className="px-3 py-2.5 text-white font-medium">{row.name}</td>
                             <td className="px-3 py-2.5 text-center">
                               <span className="bg-yellow-500/15 text-yellow-400 px-2 py-0.5 rounded font-mono text-xs">{row.handicap}</span>
@@ -869,25 +969,46 @@ export default function ParserPage() {
                                 ? <span className="bg-yellow-500/15 text-yellow-400 px-2 py-0.5 rounded font-mono text-xs">{row.score}</span>
                                 : <span className="text-slate-600 text-xs">—</span>}
                             </td>
-                            <td className="px-3 py-2.5 text-center">
-                              <input value={row.scoreFinal} onChange={e => updateCell(i, 'scoreFinal', e.target.value)}
-                                placeholder="0-0" className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-mono" />
-                            </td>
+                            {(row.children ?? []).length > 0 ? (
+                              <td></td>
+                            ) : (
+                              <td className="px-3 py-2.5 text-center">
+                                <input value={row.scoreFinal} onChange={e => updateCell(i, 'scoreFinal', e.target.value)}
+                                  placeholder="0-0" className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-mono" />
+                              </td>
+                            )}
                             <td className="px-3 py-2.5 text-center">
                               <input type="number" min={0} value={row.betAmount} onChange={e => updateCell(i, 'betAmount', e.target.value)}
                                 placeholder="0" className="w-24 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-mono" />
                             </td>
+                            {(row.children ?? []).length > 0 ? (
+                              <td></td>
+                            ) : (
+                              <td className="px-3 py-2.5 text-center">
+                                <select value={row.result} onChange={e => updateCell(i, 'result', e.target.value)}
+                                  className={`rounded px-2 py-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-yellow-500 ${RESULT_STYLES[row.result] ?? RESULT_STYLES['']}`}>
+                                  {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                </select>
+                              </td>
+                            )}
                             <td className="px-3 py-2.5 text-center">
-                              <select value={row.result} onChange={e => updateCell(i, 'result', e.target.value)}
-                                className={`rounded px-2 py-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-yellow-500 ${RESULT_STYLES[row.result] ?? RESULT_STYLES['']}`}>
-                                {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                              </select>
-                            </td>
-                            <td className="px-3 py-2.5 text-center">
-                              {(() => { const v = calcSummary(row); return v === null ? <span className="text-slate-600 text-xs">—</span> : <span className={`font-mono text-xs font-semibold ${row.result === 'draw' ? 'text-yellow-400' : v > 0 ? 'text-emerald-400' : v === 0 ? 'text-red-400' : 'text-slate-300'}`}>{fmtSummary(v)}</span>; })()}
+                              {(() => {
+                                const v = calcSummary(row);
+                                if (v === null) return <span className="text-slate-600 text-xs">—</span>;
+                                const isStep = (row.children ?? []).length > 0;
+                                const vColor = isStep
+                                  ? (v > Number(row.betAmount) ? 'text-emerald-400' : v === 0 ? 'text-red-400' : 'text-orange-400')
+                                  : (row.result === 'draw' ? 'text-yellow-400' : v > 0 ? 'text-emerald-400' : v === 0 ? 'text-red-400' : 'text-slate-300');
+                                return (
+                                  <span className={`font-mono text-xs font-semibold ${vColor}`}>{fmtSummary(v)}</span>
+                                );
+                              })()}
                             </td>
                             <td className="px-3 py-2.5">
                               <div className="flex items-center gap-1.5 justify-center">
+                                <button onClick={() => addSubRow(i)} className="p-1 rounded text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="เพิ่มรายการย่อ">
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                </button>
                                 <button onClick={() => startEdit(i)} className="p-1 rounded text-slate-400 hover:text-yellow-400 hover:bg-yellow-400/10 transition-colors" title="แก้ไข">
                                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                 </button>
@@ -899,6 +1020,50 @@ export default function ParserPage() {
                           </>
                         )}
                       </tr>
+                      {/* Sub-rows */}
+                      {(row.children ?? []).map((sub, j) => (
+                        <tr key={`s${j}`} className="bg-slate-900/30 border-b border-slate-800/60">
+                          <td className="px-3 py-1 text-slate-600 text-[10px] text-center">{i + 1}.{j + 1}</td>
+                          <td></td>
+                          <td className="px-3 py-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-slate-700 text-xs">↳</span>
+                              <input value={sub.name} onChange={e => updateSubRow(i, j, 'name', e.target.value)}
+                                placeholder="ชื่อ" className="flex-1 min-w-0 bg-slate-800 border border-slate-700/60 rounded px-2 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-yellow-500/50" />
+                            </div>
+                          </td>
+                          <td className="px-3 py-1 text-center">
+                            <input value={sub.handicap} onChange={e => updateSubRow(i, j, 'handicap', e.target.value)}
+                              placeholder="0.5" className="w-16 bg-slate-700/60 border border-yellow-500/30 rounded px-2 py-1 text-xs text-yellow-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-400 text-center font-mono font-semibold" />
+                          </td>
+                          <td className="px-3 py-1 text-center">
+                            <input value={sub.odds} onChange={e => updateSubRow(i, j, 'odds', e.target.value)}
+                              placeholder="1.90" className="w-16 bg-slate-700/60 border border-sky-500/30 rounded px-2 py-1 text-xs text-sky-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-400 text-center font-mono font-semibold" />
+                          </td>
+                          <td className="px-3 py-1 text-center">
+                            <input value={sub.score} onChange={e => updateSubRow(i, j, 'score', e.target.value)}
+                              placeholder="0-0" className="w-16 bg-slate-700/60 border border-emerald-500/30 rounded px-2 py-1 text-xs text-emerald-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-400 text-center font-mono font-semibold" />
+                          </td>
+                          <td className="px-3 py-1 text-center">
+                            <input value={sub.scoreFinal} onChange={e => updateSubRow(i, j, 'scoreFinal', e.target.value)}
+                              placeholder="0-0" className="w-16 bg-slate-700/60 border border-slate-500/40 rounded px-2 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400 text-center font-mono" />
+                          </td>
+                          <td></td>
+                          <td className="px-3 py-1 text-center">
+                            <select value={sub.result} onChange={e => updateSubRow(i, j, 'result', e.target.value)}
+                              className={`rounded px-2 py-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-yellow-500 ${RESULT_STYLES[sub.result] ?? RESULT_STYLES['']}`}>
+                              {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            </select>
+                          </td>
+                          <td></td>
+                          <td className="px-3 py-1 text-center">
+                            <button onClick={() => deleteSubRow(i, j)} className="p-1 text-slate-600 hover:text-red-400 transition-colors" title="ลบรายการย่อ">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      </Fragment>
                     );
                   })}
                 </tbody>

@@ -33,10 +33,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    // Auto-complete loan if fully paid (skip for open-ended loans where total_payment=0)
+    // Auto-complete loan if fully paid
     const loan = await db.collection('loans').findOne({ id: payment.loan_id as number });
-    if (loan && Number(loan.total_payment) > 0 && Number(loan.paid_amount) >= Number(loan.total_payment)) {
-      await db.collection('loans').updateOne({ id: loan.id as number }, { $set: { status: 'completed' } });
+    if (loan && loan.status !== 'completed') {
+      let shouldComplete = false;
+      // Fixed-term: paid_amount covers total_payment
+      if (Number(loan.total_payment) > 0 && Number(loan.paid_amount) >= Number(loan.total_payment)) {
+        shouldComplete = true;
+      }
+      // Open-ended (total_payment=0) or fallback: check if all principal paid via schedule
+      if (!shouldComplete) {
+        const schedAgg = await db.collection('payment_schedule').aggregate([
+          { $match: { loan_id: loan.id as number, status: 'paid' } },
+          { $group: { _id: null, principal: { $sum: '$principal_component' } } },
+        ]).toArray();
+        if ((schedAgg[0]?.principal ?? 0) >= Number(loan.principal)) shouldComplete = true;
+      }
+      if (shouldComplete) {
+        await db.collection('loans').updateOne({ id: loan.id as number }, { $set: { status: 'completed' } });
+      }
     }
   }
 

@@ -84,23 +84,28 @@ export async function GET(request: NextRequest) {
   const monthly = await db.collection('payments').aggregate(monthlyPipeline).toArray();
 
   // ── Overdue installments ───────────────────────────────────────────────────
+  // Loans in progress have status 'pending' (not 'active') in this system
   const overdueRes = await db.collection('payment_schedule').aggregate([
     { $match: { due_date: { $lt: today }, status: { $ne: 'paid' } } },
     { $lookup: { from: 'loans', localField: 'loan_id', foreignField: 'id', as: 'loan' } },
     { $unwind: '$loan' },
-    { $match: { 'loan.status': 'active', ...(isCustomer ? { 'loan.customer_id': user.userId } : {}) } },
+    { $match: { 'loan.status': { $nin: ['completed', 'rejected', 'defaulted'] }, ...(isCustomer ? { 'loan.customer_id': user.userId } : {}) } },
     { $count: 'overdue' },
   ]).next();
 
-  // ── Interest paid (from paid schedule rows) ────────────────────────────────
+  // ── Interest paid (from schedule rows that are paid OR linked to approved payment) ──
   const interestPipeline: object[] = [
-    { $match: { status: 'paid' } },
+    // Join with payments to catch entries linked to approved payments even if schedule status not yet updated
+    { $lookup: { from: 'payments', localField: 'id', foreignField: 'schedule_id', as: 'linked_payment' } },
+    { $unwind: { path: '$linked_payment', preserveNullAndEmptyArrays: true } },
+    { $match: { $or: [{ status: 'paid' }, { 'linked_payment.status': 'approved' }] } },
     ...(isCustomer ? [
       { $lookup: { from: 'loans', localField: 'loan_id', foreignField: 'id', as: 'loan' } },
       { $unwind: '$loan' },
       { $match: { 'loan.customer_id': user.userId } },
     ] : []),
-    { $group: { _id: null, total: { $sum: '$interest_component' } } },
+    { $group: { _id: '$_id', interest: { $first: '$interest_component' } } },
+    { $group: { _id: null, total: { $sum: '$interest' } } },
   ];
   const interestRes = await db.collection('payment_schedule').aggregate(interestPipeline).next();
 
