@@ -708,43 +708,50 @@ export default function ParserPage() {
         {/* Table */}
         {rows.length > 0 && (
           <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
-              <h2 className="text-white font-semibold text-sm">ตารางข้อมูล ({rows.length} รายการ)</h2>
-              <div className="flex items-center gap-2">
+            <div className="px-5 py-3 border-b border-slate-700 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-white font-semibold text-sm">ตารางข้อมูล</h2>
+                <span className="text-[11px] font-medium bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full">{rows.length} รายการ</span>
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+                {/* บันทึกรูป */}
                 <button
                   onClick={saveAsImage}
                   disabled={savingImage}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-yellow-400 border border-slate-600 hover:border-yellow-500/50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-100 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-400/50 px-3 py-1.5 rounded-lg transition-all disabled:opacity-40 whitespace-nowrap"
                 >
                   {savingImage ? (
-                    <><svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>กำลังบันทึก…</>
+                    <><svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>บันทึก…</>
                   ) : (
                     <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>บันทึกรูป</>
                   )}
                 </button>
+                {/* คัดลอก */}
                 <button
                   onClick={() => handleCopy('table', fullCopyText)}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white border border-slate-600 hover:border-slate-500 px-3 py-1.5 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-medium text-sky-300 hover:text-sky-100 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 hover:border-sky-400/50 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap"
                 >
                   {copied === 'table' ? (
-                    <><svg className="w-3 h-3 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-yellow-400">คัดลอกแล้ว</span></>
+                    <><svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-emerald-400">คัดลอกแล้ว</span></>
                   ) : (
-                    <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>คัดลอกทั้งหมด</>
+                    <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>คัดลอก</>
                   )}
                 </button>
+                {/* เพิ่มรายการ */}
                 <button
                   onClick={addEmptyRow}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-400 border border-slate-600 hover:border-emerald-500/40 px-3 py-1.5 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-medium text-emerald-300 hover:text-emerald-100 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 hover:border-emerald-400/60 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap"
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                  เพิ่มรายการเปล่า
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  เพิ่มรายการ
                 </button>
+                {/* ล้างตาราง */}
                 <button
                   onClick={clearAll}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 border border-slate-700 hover:border-red-500/40 px-3 py-1.5 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-medium text-red-400 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-400/50 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap"
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  ล้างตาราง
+                  <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <span className="hidden md:inline">ล้างตาราง</span>
                 </button>
               </div>
             </div>
