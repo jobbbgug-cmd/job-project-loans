@@ -35,26 +35,18 @@ function fmtDate(d: string) {
 
 const STORAGE_KEY = 'parser_saved_rows';
 
-function pasteToElement(target: HTMLTextAreaElement) {
-  const tempInput = document.createElement('textarea');
-  tempInput.style.position = 'fixed';
-  tempInput.style.left = '-999px';
-  document.body.appendChild(tempInput);
-  tempInput.focus();
-
-  const handlePaste = (e: ClipboardEvent) => {
-    const text = e.clipboardData?.getData('text/plain') || '';
+async function pasteToElement(target: HTMLTextAreaElement) {
+  try {
+    const text = await navigator.clipboard.readText();
     if (text) {
       target.value = text;
       target.dispatchEvent(new Event('input', { bubbles: true }));
       target.dispatchEvent(new Event('change', { bubbles: true }));
     }
-    tempInput.removeEventListener('paste', handlePaste);
-    document.body.removeChild(tempInput);
-  };
-
-  tempInput.addEventListener('paste', handlePaste);
-  document.execCommand('paste');
+  } catch (err) {
+    // If permission denied, show native paste menu as fallback
+    console.log('Clipboard access denied');
+  }
 }
 
 function parseLine(line: string): Row | null {
