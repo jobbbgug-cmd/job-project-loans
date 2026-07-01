@@ -542,12 +542,18 @@ export default function ParserPage() {
 
   const archiveReady = rows.length > 0
     && rows.every(r => Number(r.betAmount) > 0)
-    && rows.every(r => r.result !== '')
+    && rows.every(r => {
+      const hasChildren = (r.children ?? []).length > 0;
+      return hasChildren || r.result !== '';
+    })
     && Number(transferAmount) > 0;
 
   const archiveBlockReason = rows.length === 0 ? null
     : !rows.every(r => Number(r.betAmount) > 0) ? 'กรุณาระบุจำนวนเงินที่แทงให้ครบทุกรายการ'
-    : !rows.every(r => r.result !== '') ? 'กรุณาระบุผลลัพธ์ให้ครบทุกรายการ'
+    : !rows.every(r => {
+      const hasChildren = (r.children ?? []).length > 0;
+      return hasChildren || r.result !== '';
+    }) ? 'กรุณาระบุผลลัพธ์ให้ครบทุกรายการ (ยกเว้นรายการที่มีรายการย่อย)'
     : Number(transferAmount) <= 0 ? 'กรุณาระบุจำนวนเงินที่โอนเข้ามาในแถวรวม'
     : null;
 
