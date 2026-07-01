@@ -35,6 +35,28 @@ function fmtDate(d: string) {
 
 const STORAGE_KEY = 'parser_saved_rows';
 
+function pasteToElement(target: HTMLTextAreaElement) {
+  const tempInput = document.createElement('textarea');
+  tempInput.style.position = 'fixed';
+  tempInput.style.left = '-999px';
+  document.body.appendChild(tempInput);
+  tempInput.focus();
+
+  const handlePaste = (e: ClipboardEvent) => {
+    const text = e.clipboardData?.getData('text/plain') || '';
+    if (text) {
+      target.value = text;
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+      target.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    tempInput.removeEventListener('paste', handlePaste);
+    document.body.removeChild(tempInput);
+  };
+
+  tempInput.addEventListener('paste', handlePaste);
+  document.execCommand('paste');
+}
+
 function parseLine(line: string): Row | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
@@ -602,7 +624,14 @@ export default function ParserPage() {
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-slate-300">ข้อมูลดิบ</label>
-              <p className="text-xs text-slate-500">วาง Cmd+V โดยตรง</p>
+              <button
+                type="button"
+                onClick={() => { const ta = document.querySelector('textarea[placeholder*="เซลติก"]') as HTMLTextAreaElement; if (ta) pasteToElement(ta); }}
+                className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                วาง
+              </button>
             </div>
             <textarea
               value={input}
@@ -627,7 +656,14 @@ export default function ParserPage() {
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-slate-300">ข้อมูลจำนวนเงินที่แทง</label>
-              <p className="text-xs text-slate-500">วาง Cmd+V โดยตรง</p>
+              <button
+                type="button"
+                onClick={() => { const ta = document.querySelector('textarea[placeholder*="ต่อเชลติก"]') as HTMLTextAreaElement; if (ta) pasteToElement(ta); }}
+                className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                วาง
+              </button>
             </div>
             <textarea
               value={betInput}
