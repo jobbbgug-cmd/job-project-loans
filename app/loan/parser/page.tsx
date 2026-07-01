@@ -602,23 +602,7 @@ export default function ParserPage() {
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-slate-300">ข้อมูลดิบ</label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={async () => { try { const t = await navigator.clipboard.readText(); setInput(t); } catch { /* ignore */ } }}
-                  className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                  วาง
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setInput(''); setErrors([]); setNewCount(0); }}
-                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  ล้าง
-                </button>
-              </div>
+              <p className="text-xs text-slate-500">วาง Cmd+V โดยตรง</p>
             </div>
             <textarea
               value={input}
@@ -643,23 +627,7 @@ export default function ParserPage() {
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-slate-300">ข้อมูลจำนวนเงินที่แทง</label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={async () => { try { const t = await navigator.clipboard.readText(); setBetInput(t); } catch { /* ignore */ } }}
-                  className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                  วาง
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setBetInput(''); setMatchMsg(null); }}
-                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  ล้าง
-                </button>
-              </div>
+              <p className="text-xs text-slate-500">วาง Cmd+V โดยตรง</p>
             </div>
             <textarea
               value={betInput}
