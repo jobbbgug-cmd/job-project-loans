@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/loan-db';
 import { getAuthUser } from '@/lib/loan-auth';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const id = Number(params.id);
+  const { id: idStr } = await params;
+  const id = Number(idStr);
   const body = await request.json();
   const { label } = body;
 
