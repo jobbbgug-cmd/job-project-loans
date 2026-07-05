@@ -23,21 +23,32 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const signature = request.headers.get('x-line-signature') ?? '';
 
+  console.log('📨 Webhook received:', { signature: signature ? 'present' : 'missing', bodyLength: rawBody.length });
+
   if (!verifySignature(rawBody, signature)) {
+    console.error('❌ Webhook signature verification failed');
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
   let body: LineWebhookBody;
-  try { body = JSON.parse(rawBody); } catch {
+  try {
+    body = JSON.parse(rawBody);
+    console.log('✓ Parsed webhook body:', JSON.stringify(body, null, 2));
+  } catch (e) {
+    console.error('❌ JSON parsing failed:', e);
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   const db = await getDb();
+  let savedCount = 0;
+
   for (const event of body.events) {
     if (event.type !== 'message' || event.message?.type !== 'text') continue;
     const text = event.message.text.trim();
     if (!text) continue;
     const userId = event.source?.userId ?? null;
+
+    console.log('📝 Processing message:', { text, userId });
 
     let displayName: string | null = null;
     const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
@@ -59,7 +70,11 @@ export async function POST(request: NextRequest) {
       used: false,
       received_at: new Date().toISOString(),
     });
+
+    savedCount++;
+    console.log('✓ Message saved:', { id: msgId, text, displayName });
   }
 
+  console.log(`✅ Webhook processed: ${savedCount} messages saved`);
   return NextResponse.json({ ok: true });
 }

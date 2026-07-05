@@ -176,6 +176,13 @@ function nameSimilar(a: string, b: string): boolean {
   return levenshtein(a, b) <= threshold;
 }
 
+interface LineMessage {
+  id: number;
+  display_name: string | null;
+  message: string;
+  received_at: string;
+}
+
 export default function ParserPage() {
   const [input, setInput]           = useState('');
   const [betInput, setBetInput]     = useState('');
@@ -192,6 +199,10 @@ export default function ParserPage() {
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiveError, setArchiveError] = useState('');
   const [savingImage, setSavingImage] = useState(false);
+  const [lineMessages, setLineMessages] = useState<LineMessage[]>([]);
+  const [showLineModal, setShowLineModal] = useState(false);
+  const [loadingLineMessages, setLoadingLineMessages] = useState(false);
+  const [selectedLineIds, setSelectedLineIds] = useState<Set<number>>(new Set());
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   async function loadDraftFromServer() {
     try {
@@ -296,6 +307,69 @@ export default function ParserPage() {
         body: JSON.stringify({ rows: r, transfer_amount: transfer }),
       }).catch(() => {});
     }, 1500);
+  }
+
+  async function fetchLineMessages() {
+    setLoadingLineMessages(true);
+    try {
+      const res = await fetch('/api/loan/line-messages');
+      if (res.ok) {
+        const allData = await res.json() as LineMessage[];
+
+        // Filter messages that are parseable and from today (within 24 hours from now)
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+        // Filter and validate parseable messages from the last 24 hours
+        const parseableMessages = allData.filter(msg => {
+          const msgTime = new Date(msg.received_at);
+          // Show messages from last 24 hours
+          if (msgTime < oneDayAgo) return false;
+          // Check if message is parseable
+          return parseLine(msg.message) !== null;
+        });
+
+        setLineMessages(parseableMessages);
+        setSelectedLineIds(new Set());
+      }
+    } catch (err) {
+      console.error('Failed to fetch Line messages:', err);
+    } finally {
+      setLoadingLineMessages(false);
+    }
+  }
+
+  async function importLineMessages() {
+    if (selectedLineIds.size === 0) return;
+    const msgs = lineMessages.filter(m => selectedLineIds.has(m.id));
+    const allLines = msgs.map(m => m.message).join('\n');
+    setInput(prev => prev ? prev + '\n' + allLines : allLines);
+    await markLineMessagesAsUsed(Array.from(selectedLineIds));
+    // Remove imported messages from the list
+    setLineMessages(prev => prev.filter(m => !selectedLineIds.has(m.id)));
+    setSelectedLineIds(new Set());
+  }
+
+  async function markLineMessagesAsUsed(ids: number[]) {
+    try {
+      await fetch('/api/loan/line-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+    } catch (err) {
+      console.error('Failed to mark messages as used:', err);
+    }
+  }
+
+  function toggleLineMessageSelection(id: number) {
+    const newSet = new Set(selectedLineIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedLineIds(newSet);
   }
 
   function saveToStorage() {
@@ -720,21 +794,37 @@ export default function ParserPage() {
         </div>
 
         {/* Save button row */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveToStorage}
+              disabled={rows.length === 0}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 ${
+                saved ? 'bg-yellow-700 text-yellow-200' : 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
+              }`}
+            >
+              {saved ? (
+                <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>บันทึกแล้ว</>
+              ) : (
+                <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>บันทึก</>
+              )}
+            </button>
+            <p className="text-slate-500 text-xs">กด บันทึก เพื่อเก็บข้อมูลไว้ใช้ครั้งหน้า</p>
+          </div>
           <button
-            onClick={saveToStorage}
-            disabled={rows.length === 0}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 ${
-              saved ? 'bg-yellow-700 text-yellow-200' : 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
-            }`}
+            onClick={() => { setShowLineModal(true); fetchLineMessages(); }}
+            disabled={loadingLineMessages}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 bg-slate-700 hover:bg-slate-600 text-white border border-slate-600"
           >
-            {saved ? (
-              <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>บันทึกแล้ว</>
+            {loadingLineMessages ? (
+              <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>กำลังโหลด…</>
             ) : (
-              <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>บันทึก</>
+              <>
+                <span>ดึงข้อมูลจาก</span>
+                <img src="/LINE.png" alt="LINE" className="w-4 h-4" />
+              </>
             )}
           </button>
-          <p className="text-slate-500 text-xs">กด บันทึก เพื่อเก็บข้อมูลไว้ใช้ครั้งหน้า</p>
         </div>
 
         {/* Errors */}
@@ -1260,6 +1350,70 @@ export default function ParserPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Line Messages Modal */}
+        {showLineModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 max-w-2xl w-full max-h-[70vh] flex flex-col">
+              <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="text-white font-semibold">ดึงข้อมูลจากไลน์</h3>
+                <button
+                  onClick={() => setShowLineModal(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                {lineMessages.length === 0 ? (
+                  <p className="text-slate-400 text-sm text-center py-8">ไม่มีข้อมูลจากไลน์สำหรับวันนี้</p>
+                ) : (
+                  lineMessages.map(msg => {
+                    const parsed = parseLine(msg.message);
+                    return (
+                      <label key={msg.id} className="flex items-start gap-3 p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={selectedLineIds.has(msg.id)}
+                          onChange={() => toggleLineMessageSelection(msg.id)}
+                          className="mt-0.5 rounded border-slate-600 text-green-500 focus:ring-green-500"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-slate-300">{msg.display_name || 'Unknown'}</div>
+                          <div className="text-xs text-slate-400 mt-1 font-mono break-words">{msg.message}</div>
+                          {parsed && (
+                            <div className="text-xs text-emerald-400 mt-2 space-y-0.5">
+                              <div>📋 {parsed.name}</div>
+                              <div>💰 {parsed.handicap} / {parsed.odds} {parsed.score ? `(${parsed.score})` : ''}</div>
+                            </div>
+                          )}
+                          <div className="text-xs text-slate-500 mt-1">{new Date(msg.received_at).toLocaleTimeString('th-TH')}</div>
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="px-6 py-4 border-t border-slate-700 flex gap-3">
+                <button
+                  onClick={() => setShowLineModal(false)}
+                  className="flex-1 px-4 py-2 text-slate-400 hover:text-white border border-slate-600 rounded-xl text-sm font-medium transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={importLineMessages}
+                  disabled={selectedLineIds.size === 0}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  นำเข้า ({selectedLineIds.size})
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
