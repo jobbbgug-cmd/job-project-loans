@@ -9,6 +9,7 @@ interface SubRow {
   score: string;
   scoreFinal: string;
   result: string;
+  linkedRowIndex?: number; // Index of the main row this is linked to (-1 for unlinked/manual)
 }
 
 interface Row {
@@ -53,26 +54,23 @@ function parseLine(line: string): Row | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
 
-  const lastSpace = trimmed.lastIndexOf(' ');
-  if (lastSpace === -1) return null;
+  // Pattern: handicap/odds with optional spaces and score in parentheses
+  // e.g., "0.5/1.78(1-2)" or "0.5/1.78 (1-2)" or "0.5 / 1.78 ( 1-2 )"
+  const dataPattern = /(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*(?:\(\s*([^)]*)\s*\))?/;
+  const match = trimmed.match(dataPattern);
 
-  const name = trimmed.slice(0, lastSpace).trim();
-  const data = trimmed.slice(lastSpace + 1).trim();
+  if (!match) return null;
 
-  const slashIdx = data.indexOf('/');
-  if (slashIdx === -1) return null;
+  // Extract data parts from regex match
+  const handicap = match[1];
+  const odds = match[2];
+  const score = match[3]?.trim() || '';
+  const dataStartIdx = match.index || 0;
 
-  const handicap   = data.slice(0, slashIdx);
-  const afterSlash = data.slice(slashIdx + 1);
-  const parenOpen  = afterSlash.indexOf('(');
-  const parenClose = afterSlash.indexOf(')');
+  // Everything before the data pattern is the name
+  const name = trimmed.slice(0, dataStartIdx).trim();
+  if (!name) return null;
 
-  const odds  = parenOpen === -1 ? afterSlash : afterSlash.slice(0, parenOpen);
-  const score = parenOpen !== -1 && parenClose > parenOpen
-    ? afterSlash.slice(parenOpen + 1, parenClose)
-    : '';
-
-  if (!name || !handicap || !odds) return null;
   return { date: todayStr(), name, handicap, odds, score, scoreFinal: '', betAmount: '', result: '' };
 }
 
@@ -138,12 +136,12 @@ const RESULT_OPTIONS = [
 ];
 
 const RESULT_STYLES: Record<string, string> = {
-  win_full:  'bg-emerald-500/30 text-emerald-200 ring-1 ring-emerald-400/60 font-semibold',
-  win_half:  'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40',
-  lose_full: 'bg-red-500/30 text-red-200 ring-1 ring-red-400/60 font-semibold',
-  lose_half: 'bg-red-500/20 text-red-300 ring-1 ring-red-500/40',
-  draw:      'bg-yellow-500/25 text-yellow-200 ring-1 ring-yellow-400/50',
-  '':        'bg-slate-700/60 text-slate-300',
+  win_full:  'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-400 font-semibold',
+  win_half:  'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300',
+  lose_full: 'bg-red-100 text-red-700 ring-1 ring-red-400 font-semibold',
+  lose_half: 'bg-red-50 text-red-700 ring-1 ring-red-300',
+  draw:      'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-400',
+  '':        'bg-slate-200 text-slate-700',
 };
 
 function parseBetAmountLine(line: string): { name: string; amount: string } | null {
@@ -410,11 +408,52 @@ export default function ParserPage() {
     setSaved(false);
   }
 
+  function getSubRowDisplayData(subRow: SubRow, allRows: Row[]): SubRow {
+    // If linked to a main row, pull data from it
+    if (subRow.linkedRowIndex !== undefined && subRow.linkedRowIndex >= 0) {
+      const linkedRow = allRows[subRow.linkedRowIndex];
+      if (linkedRow) {
+        return {
+          ...subRow,
+          handicap: linkedRow.handicap,
+          odds: linkedRow.odds,
+          score: linkedRow.score,
+          scoreFinal: linkedRow.scoreFinal,
+          result: linkedRow.result, // Also link result
+        };
+      }
+    }
+    return subRow;
+  }
+
   function updateSubRow(i: number, j: number, field: keyof SubRow, value: string) {
     setRows(prev => {
       const a = [...prev];
       const ch = [...(a[i].children ?? [])];
-      ch[j] = { ...ch[j], [field]: value };
+
+      // Auto-fill and link when name is selected from master data
+      if (field === 'name') {
+        const matchedIdx = rows.findIndex(r => r.name === value);
+        if (matchedIdx >= 0) {
+          const matchedRow = rows[matchedIdx];
+          ch[j] = {
+            ...ch[j],
+            name: value,
+            handicap: matchedRow.handicap,
+            odds: matchedRow.odds,
+            score: matchedRow.score,
+            linkedRowIndex: matchedIdx, // Link to this row
+          };
+        } else {
+          ch[j] = { ...ch[j], [field]: value, linkedRowIndex: -1 }; // Unlink if name doesn't match
+        }
+      } else if (field === 'handicap' || field === 'odds' || field === 'score') {
+        // Manual edit breaks the link
+        ch[j] = { ...ch[j], [field]: value, linkedRowIndex: -1 };
+      } else {
+        ch[j] = { ...ch[j], [field]: value };
+      }
+
       a[i] = { ...a[i], children: ch };
       return a;
     });
@@ -837,26 +876,52 @@ export default function ParserPage() {
                     {/* Sub-rows (mobile) */}
                     {(row.children ?? []).length > 0 && (
                       <div className="border-t border-slate-700/50 pt-2 space-y-1.5">
-                        {(row.children ?? []).map((sub, j) => (
-                          <div key={j} className="flex items-center gap-1.5 bg-slate-800/60 rounded-lg px-2 py-1.5">
+                        {(row.children ?? []).map((sub, j) => {
+                          const displayData = getSubRowDisplayData(sub, rows);
+                          const isLinked = sub.linkedRowIndex !== undefined && sub.linkedRowIndex >= 0;
+                          return (
+                          <div key={j} className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 ${isLinked ? 'bg-slate-700/40' : 'bg-slate-800/60'}`}>
                             <span className="text-slate-500 text-[10px] font-mono shrink-0">{i + 1}.{j + 1}</span>
-                            <input value={sub.name} onChange={e => updateSubRow(i, j, 'name', e.target.value)}
-                              placeholder="ชื่อ" className="flex-1 min-w-0 bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none" />
-                            <input value={sub.handicap} onChange={e => updateSubRow(i, j, 'handicap', e.target.value)}
-                              placeholder="ต่อ" className="w-10 bg-transparent text-xs text-yellow-300 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
-                            <input value={sub.odds} onChange={e => updateSubRow(i, j, 'odds', e.target.value)}
-                              placeholder="น้ำ" className="w-10 bg-transparent text-xs text-sky-300 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
-                            <input value={sub.score} onChange={e => updateSubRow(i, j, 'score', e.target.value)}
-                              placeholder="สกอร์" className="w-12 bg-transparent text-xs text-emerald-200 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
-                            <select value={sub.result} onChange={e => updateSubRow(i, j, 'result', e.target.value)}
-                              className={`rounded px-1 py-0.5 text-[10px] border-0 focus:outline-none shrink-0 ${RESULT_STYLES[sub.result] ?? RESULT_STYLES['']}`}>
-                              {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            <select value={sub.name} onChange={e => updateSubRow(i, j, 'name', e.target.value)}
+                              className="flex-1 min-w-0 bg-slate-700/50 text-xs text-slate-100 focus:outline-none rounded px-1 py-0.5 border border-slate-600">
+                              <option value="">-- เลือก --</option>
+                              {rows.map((r, idx) => (
+                                <option key={idx} value={r.name}>{r.name}</option>
+                              ))}
                             </select>
+                            {isLinked && <span className="text-[8px] text-blue-400 font-bold shrink-0">🔗</span>}
+                            {isLinked ? (
+                              <>
+                                <span className="text-xs text-yellow-300 font-mono font-semibold w-10 text-center">{displayData.handicap}</span>
+                                <span className="text-xs text-sky-300 font-mono font-semibold w-10 text-center">{displayData.odds}</span>
+                                <span className="text-xs text-emerald-200 font-mono font-semibold w-12 text-center">{displayData.score}</span>
+                              </>
+                            ) : (
+                              <>
+                                <input value={sub.handicap} onChange={e => updateSubRow(i, j, 'handicap', e.target.value)}
+                                  placeholder="ต่อ" className="w-10 bg-transparent text-xs text-yellow-300 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
+                                <input value={sub.odds} onChange={e => updateSubRow(i, j, 'odds', e.target.value)}
+                                  placeholder="น้ำ" className="w-10 bg-transparent text-xs text-sky-300 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
+                                <input value={sub.score} onChange={e => updateSubRow(i, j, 'score', e.target.value)}
+                                  placeholder="สกอร์" className="w-12 bg-transparent text-xs text-emerald-200 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
+                              </>
+                            )}
+                            {isLinked ? (
+                              <span className={`rounded px-1 py-0.5 text-[10px] font-semibold shrink-0 inline-block ${RESULT_STYLES[displayData.result] ?? RESULT_STYLES['']}`}>
+                                {RESULT_OPTIONS.find(o => o.value === displayData.result)?.label || '—'}
+                              </span>
+                            ) : (
+                              <select value={sub.result} onChange={e => updateSubRow(i, j, 'result', e.target.value)}
+                                className={`rounded px-1 py-0.5 text-[10px] border-0 focus:outline-none shrink-0 ${RESULT_STYLES[sub.result] ?? RESULT_STYLES['']}`}>
+                                {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                              </select>
+                            )}
                             <button onClick={() => deleteSubRow(i, j)} className="p-0.5 text-slate-600 hover:text-red-400 transition-colors shrink-0">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                     {/* Add sub-row button (mobile) */}
@@ -1030,39 +1095,70 @@ export default function ParserPage() {
                         )}
                       </tr>
                       {/* Sub-rows */}
-                      {(row.children ?? []).map((sub, j) => (
-                        <tr key={`s${j}`} className="bg-slate-900/30 border-b border-slate-800/60">
+                      {(row.children ?? []).map((sub, j) => {
+                        const displayData = getSubRowDisplayData(sub, rows);
+                        const isLinked = sub.linkedRowIndex !== undefined && sub.linkedRowIndex >= 0;
+                        return (
+                        <tr key={`s${j}`} className={`border-b border-slate-800/60 ${isLinked ? 'bg-slate-800/20' : 'bg-slate-900/30'}`}>
                           <td className="px-3 py-1 text-slate-600 text-[10px] text-center">{i + 1}.{j + 1}</td>
                           <td></td>
                           <td className="px-3 py-1">
                             <div className="flex items-center gap-1.5">
                               <span className="text-slate-700 text-xs">↳</span>
-                              <input value={sub.name} onChange={e => updateSubRow(i, j, 'name', e.target.value)}
-                                placeholder="ชื่อ" className="flex-1 min-w-0 bg-slate-800 border border-slate-700/60 rounded px-2 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-yellow-500/50" />
+                              <select value={sub.name} onChange={e => updateSubRow(i, j, 'name', e.target.value)}
+                                className="flex-1 min-w-0 bg-slate-800 border border-slate-700/60 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-yellow-500/50">
+                                <option value="">-- เลือกรายการ --</option>
+                                {rows.map((r, idx) => (
+                                  <option key={idx} value={r.name}>{r.name}</option>
+                                ))}
+                              </select>
+                              {isLinked && <span className="text-[9px] text-blue-400 font-semibold shrink-0">🔗</span>}
                             </div>
                           </td>
                           <td className="px-3 py-1 text-center">
-                            <input value={sub.handicap} onChange={e => updateSubRow(i, j, 'handicap', e.target.value)}
-                              placeholder="0.5" className="w-16 bg-slate-700/60 border border-yellow-500/30 rounded px-2 py-1 text-xs text-yellow-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-400 text-center font-mono font-semibold" />
+                            {isLinked ? (
+                              <span className="text-xs text-yellow-200 font-mono font-semibold">{displayData.handicap}</span>
+                            ) : (
+                              <input value={sub.handicap} onChange={e => updateSubRow(i, j, 'handicap', e.target.value)}
+                                placeholder="0.5" className="w-16 bg-slate-700/60 border border-yellow-500/30 rounded px-2 py-1 text-xs text-yellow-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-400 text-center font-mono font-semibold" />
+                            )}
                           </td>
                           <td className="px-3 py-1 text-center">
-                            <input value={sub.odds} onChange={e => updateSubRow(i, j, 'odds', e.target.value)}
-                              placeholder="1.90" className="w-16 bg-slate-700/60 border border-sky-500/30 rounded px-2 py-1 text-xs text-sky-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-400 text-center font-mono font-semibold" />
+                            {isLinked ? (
+                              <span className="text-xs text-sky-200 font-mono font-semibold">{displayData.odds}</span>
+                            ) : (
+                              <input value={sub.odds} onChange={e => updateSubRow(i, j, 'odds', e.target.value)}
+                                placeholder="1.90" className="w-16 bg-slate-700/60 border border-sky-500/30 rounded px-2 py-1 text-xs text-sky-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-400 text-center font-mono font-semibold" />
+                            )}
                           </td>
                           <td className="px-3 py-1 text-center">
-                            <input value={sub.score} onChange={e => updateSubRow(i, j, 'score', e.target.value)}
-                              placeholder="0-0" className="w-16 bg-slate-700/60 border border-emerald-500/30 rounded px-2 py-1 text-xs text-emerald-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-400 text-center font-mono font-semibold" />
+                            {isLinked ? (
+                              <span className="text-xs text-emerald-200 font-mono font-semibold">{displayData.score}</span>
+                            ) : (
+                              <input value={sub.score} onChange={e => updateSubRow(i, j, 'score', e.target.value)}
+                                placeholder="0-0" className="w-16 bg-slate-700/60 border border-emerald-500/30 rounded px-2 py-1 text-xs text-emerald-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-400 text-center font-mono font-semibold" />
+                            )}
                           </td>
                           <td className="px-3 py-1 text-center">
-                            <input value={sub.scoreFinal} onChange={e => updateSubRow(i, j, 'scoreFinal', e.target.value)}
-                              placeholder="0-0" className="w-16 bg-slate-700/60 border border-slate-500/40 rounded px-2 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400 text-center font-mono" />
+                            {isLinked ? (
+                              <span className="text-xs text-slate-200 font-mono font-semibold">{displayData.scoreFinal || '—'}</span>
+                            ) : (
+                              <input value={sub.scoreFinal} onChange={e => updateSubRow(i, j, 'scoreFinal', e.target.value)}
+                                placeholder="0-0" className="w-16 bg-slate-700/60 border border-slate-500/40 rounded px-2 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400 text-center font-mono" />
+                            )}
                           </td>
                           <td></td>
                           <td className="px-3 py-1 text-center">
-                            <select value={sub.result} onChange={e => updateSubRow(i, j, 'result', e.target.value)}
-                              className={`rounded px-2 py-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-yellow-500 ${RESULT_STYLES[sub.result] ?? RESULT_STYLES['']}`}>
-                              {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
+                            {isLinked ? (
+                              <span className={`px-2 py-1 rounded text-xs font-semibold inline-block ${RESULT_STYLES[displayData.result] ?? RESULT_STYLES['']}`}>
+                                {RESULT_OPTIONS.find(o => o.value === displayData.result)?.label || '—'}
+                              </span>
+                            ) : (
+                              <select value={sub.result} onChange={e => updateSubRow(i, j, 'result', e.target.value)}
+                                className={`rounded px-2 py-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-yellow-500 ${RESULT_STYLES[sub.result] ?? RESULT_STYLES['']}`}>
+                                {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                              </select>
+                            )}
                           </td>
                           <td></td>
                           <td className="px-3 py-1 text-center">
@@ -1071,7 +1167,8 @@ export default function ParserPage() {
                             </button>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                       </Fragment>
                     );
                   })}
