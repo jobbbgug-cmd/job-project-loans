@@ -39,3 +39,22 @@ export async function POST(request: NextRequest) {
   });
   return NextResponse.json({ id }, { status: 201 });
 }
+
+export async function DELETE(request: NextRequest) {
+  const user = await getAuthUser(request);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
+
+  const db = await getDb();
+  const result = await db.collection('parser_sessions').deleteOne({ id: Number(id) });
+
+  if (result.deletedCount === 0) {
+    return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true });
+}
