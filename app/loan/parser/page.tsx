@@ -318,15 +318,16 @@ export default function ParserPage() {
       if (res.ok) {
         const allData = await res.json() as LineMessage[];
 
-        // Filter messages from today (within 24 hours from now)
-        const now = new Date();
-        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        // Filter messages from today (00:01 - 23:59)
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 1, 0);
+        const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-        // Show all messages from the last 24 hours (parseable and non-parseable)
+        // Show all messages from today (parseable and non-parseable)
         const todayMessages = allData.filter(msg => {
           const msgTime = new Date(msg.received_at);
-          // Show messages from last 24 hours
-          return msgTime >= oneDayAgo;
+          // Show messages from today 00:01 - 23:59
+          return msgTime >= todayStart && msgTime <= todayEnd;
         });
 
         setLineMessages(todayMessages);
