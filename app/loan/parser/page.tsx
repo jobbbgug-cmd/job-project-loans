@@ -317,20 +317,18 @@ export default function ParserPage() {
       if (res.ok) {
         const allData = await res.json() as LineMessage[];
 
-        // Filter messages that are parseable and from today (within 24 hours from now)
+        // Filter messages from today (within 24 hours from now)
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // Filter and validate parseable messages from the last 24 hours
-        const parseableMessages = allData.filter(msg => {
+        // Show all messages from the last 24 hours (parseable and non-parseable)
+        const todayMessages = allData.filter(msg => {
           const msgTime = new Date(msg.received_at);
           // Show messages from last 24 hours
-          if (msgTime < oneDayAgo) return false;
-          // Check if message is parseable
-          return parseLine(msg.message) !== null;
+          return msgTime >= oneDayAgo;
         });
 
-        setLineMessages(parseableMessages);
+        setLineMessages(todayMessages);
         setSelectedLineIds(new Set());
       }
     } catch (err) {
@@ -1375,21 +1373,24 @@ export default function ParserPage() {
                   lineMessages.map(msg => {
                     const parsed = parseLine(msg.message);
                     return (
-                      <label key={msg.id} className="flex items-start gap-3 p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors">
+                      <label key={msg.id} className={`flex items-start gap-3 p-3 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors ${parsed ? 'bg-slate-700/50' : 'bg-slate-800/50 opacity-60'}`}>
                         <input
                           type="checkbox"
                           checked={selectedLineIds.has(msg.id)}
                           onChange={() => toggleLineMessageSelection(msg.id)}
-                          className="mt-0.5 rounded border-slate-600 text-green-500 focus:ring-green-500"
+                          disabled={!parsed}
+                          className="mt-0.5 rounded border-slate-600 text-green-500 focus:ring-green-500 disabled:opacity-40"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-slate-300">{msg.display_name || 'Unknown'}</div>
                           <div className="text-xs text-slate-400 mt-1 font-mono break-words">{msg.message}</div>
-                          {parsed && (
+                          {parsed ? (
                             <div className="text-xs text-emerald-400 mt-2 space-y-0.5">
                               <div>📋 {parsed.name}</div>
                               <div>💰 {parsed.handicap} / {parsed.odds} {parsed.score ? `(${parsed.score})` : ''}</div>
                             </div>
+                          ) : (
+                            <div className="text-xs text-amber-400 mt-2">⚠️ ไม่สามารถแยกข้อมูลได้</div>
                           )}
                           <div className="text-xs text-slate-500 mt-1">{new Date(msg.received_at).toLocaleTimeString('th-TH')}</div>
                         </div>
