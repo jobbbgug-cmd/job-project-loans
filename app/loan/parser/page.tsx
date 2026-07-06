@@ -55,8 +55,9 @@ function parseLine(line: string): Row | null {
   if (!trimmed) return null;
 
   // Pattern: handicap/odds with optional spaces and score in parentheses
-  // e.g., "0.5/1.78(1-2)" or "0.5/1.78 (1-2)" or "0.5 / 1.78 ( 1-2 )"
-  const dataPattern = /(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*(?:\(\s*([^)]*)\s*\))?/;
+  // Handicap can be: "0.5", "0-0.5", "0.5-1", etc.
+  // e.g., "0.5/1.78(1-2)" or "0-0.5/1.78(1-2)" or "0.5 / 1.78 ( 1-2 )"
+  const dataPattern = /([0-9\.\-]+)\s*\/\s*(\d+(?:\.\d+)?)\s*(?:\(\s*([^)]*)\s*\))?/;
   const match = trimmed.match(dataPattern);
 
   if (!match) return null;
