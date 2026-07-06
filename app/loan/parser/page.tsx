@@ -182,6 +182,7 @@ interface LineMessage {
   display_name: string | null;
   message: string;
   received_at: string;
+  used?: boolean;
 }
 
 export default function ParserPage() {
@@ -1372,17 +1373,21 @@ export default function ParserPage() {
                 ) : (
                   lineMessages.map(msg => {
                     const parsed = parseLine(msg.message);
+                    const isUsed = msg.used === true;
                     return (
-                      <label key={msg.id} className={`flex items-start gap-3 p-3 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors ${parsed ? 'bg-slate-700/50' : 'bg-slate-800/50 opacity-60'}`}>
+                      <label key={msg.id} className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${isUsed ? 'bg-slate-900/50 opacity-50 cursor-not-allowed' : parsed ? 'bg-slate-700/50 hover:bg-slate-700 cursor-pointer' : 'bg-slate-800/50 opacity-60 cursor-not-allowed'}`}>
                         <input
                           type="checkbox"
                           checked={selectedLineIds.has(msg.id)}
                           onChange={() => toggleLineMessageSelection(msg.id)}
-                          disabled={!parsed}
+                          disabled={!parsed || isUsed}
                           className="mt-0.5 rounded border-slate-600 text-green-500 focus:ring-green-500 disabled:opacity-40"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-slate-300">{msg.display_name || 'Unknown'}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium text-slate-300">{msg.display_name || 'Unknown'}</div>
+                            {isUsed && <span className="text-xs bg-slate-700 text-slate-400 px-2 py-0.5 rounded">✓ ใช้แล้ว</span>}
+                          </div>
                           <div className="text-xs text-slate-400 mt-1 font-mono break-words">{msg.message}</div>
                           {parsed ? (
                             <div className="text-xs text-emerald-400 mt-2 space-y-0.5">

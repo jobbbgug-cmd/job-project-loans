@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
 
   const db = await getDb();
   const rows = await db.collection('line_messages')
-    .find({ used: false }, { projection: { _id: 0, id: 1, display_name: 1, message: 1, received_at: 1 } })
-    .sort({ received_at: 1 })
+    .find({}, { projection: { _id: 0, id: 1, display_name: 1, message: 1, received_at: 1, used: 1 } })
+    .sort({ received_at: -1 })
     .toArray();
   return NextResponse.json(rows);
 }
