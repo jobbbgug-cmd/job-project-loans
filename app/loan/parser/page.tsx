@@ -205,6 +205,17 @@ export default function ParserPage() {
   const [showLineModal, setShowLineModal] = useState(false);
   const [loadingLineMessages, setLoadingLineMessages] = useState(false);
   const [selectedLineIds, setSelectedLineIds] = useState<Set<number>>(new Set());
+
+  const [rawMessages, setRawMessages] = useState<LineMessage[]>([]);
+  const [showRawModal, setShowRawModal] = useState(false);
+  const [loadingRawMessages, setLoadingRawMessages] = useState(false);
+  const [selectedRawIds, setSelectedRawIds] = useState<Set<number>>(new Set());
+
+  const [amountMessages, setAmountMessages] = useState<LineMessage[]>([]);
+  const [showAmountModal, setShowAmountModal] = useState(false);
+  const [loadingAmountMessages, setLoadingAmountMessages] = useState(false);
+  const [selectedAmountIds, setSelectedAmountIds] = useState<Set<number>>(new Set());
+
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   async function loadDraftFromServer() {
     try {
@@ -340,15 +351,80 @@ export default function ParserPage() {
     }
   }
 
+  async function fetchRawMessages() {
+    setLoadingRawMessages(true);
+    try {
+      const res = await fetch('/api/loan/line-messages?type=raw');
+      if (res.ok) {
+        const allData = await res.json() as LineMessage[];
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 1, 0);
+        const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+        const todayMessages = allData.filter(msg => {
+          const msgTime = new Date(msg.received_at);
+          return msgTime >= todayStart && msgTime <= todayEnd;
+        });
+        setRawMessages(todayMessages);
+        setSelectedRawIds(new Set());
+      }
+    } catch (err) {
+      console.error('Failed to fetch raw messages:', err);
+    } finally {
+      setLoadingRawMessages(false);
+    }
+  }
+
+  async function fetchAmountMessages() {
+    setLoadingAmountMessages(true);
+    try {
+      const res = await fetch('/api/loan/line-messages?type=amount');
+      if (res.ok) {
+        const allData = await res.json() as LineMessage[];
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 1, 0);
+        const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+        const todayMessages = allData.filter(msg => {
+          const msgTime = new Date(msg.received_at);
+          return msgTime >= todayStart && msgTime <= todayEnd;
+        });
+        setAmountMessages(todayMessages);
+        setSelectedAmountIds(new Set());
+      }
+    } catch (err) {
+      console.error('Failed to fetch amount messages:', err);
+    } finally {
+      setLoadingAmountMessages(false);
+    }
+  }
+
   async function importLineMessages() {
     if (selectedLineIds.size === 0) return;
     const msgs = lineMessages.filter(m => selectedLineIds.has(m.id));
     const allLines = msgs.map(m => m.message).join('\n');
     setInput(prev => prev ? prev + '\n' + allLines : allLines);
     await markLineMessagesAsUsed(Array.from(selectedLineIds));
-    // Remove imported messages from the list
     setLineMessages(prev => prev.filter(m => !selectedLineIds.has(m.id)));
     setSelectedLineIds(new Set());
+  }
+
+  async function importRawMessages() {
+    if (selectedRawIds.size === 0) return;
+    const msgs = rawMessages.filter(m => selectedRawIds.has(m.id));
+    const allLines = msgs.map(m => m.message).join('\n');
+    setInput(prev => prev ? prev + '\n' + allLines : allLines);
+    await markLineMessagesAsUsed(Array.from(selectedRawIds));
+    setRawMessages(prev => prev.filter(m => !selectedRawIds.has(m.id)));
+    setSelectedRawIds(new Set());
+  }
+
+  async function importAmountMessages() {
+    if (selectedAmountIds.size === 0) return;
+    const msgs = amountMessages.filter(m => selectedAmountIds.has(m.id));
+    const allLines = msgs.map(m => m.message).join('\n');
+    setBetInput(prev => prev ? prev + '\n' + allLines : allLines);
+    await markLineMessagesAsUsed(Array.from(selectedAmountIds));
+    setAmountMessages(prev => prev.filter(m => !selectedAmountIds.has(m.id)));
+    setSelectedAmountIds(new Set());
   }
 
   async function markLineMessagesAsUsed(ids: number[]) {
@@ -371,6 +447,26 @@ export default function ParserPage() {
       newSet.add(id);
     }
     setSelectedLineIds(newSet);
+  }
+
+  function toggleRawMessageSelection(id: number) {
+    const newSet = new Set(selectedRawIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedRawIds(newSet);
+  }
+
+  function toggleAmountMessageSelection(id: number) {
+    const newSet = new Set(selectedAmountIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedAmountIds(newSet);
   }
 
   function saveToStorage() {
@@ -730,14 +826,29 @@ export default function ParserPage() {
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-slate-300">ข้อมูลดิบ</label>
-              <button
-                type="button"
-                onClick={() => { const ta = document.querySelector('textarea[placeholder*="เซลติก"]') as HTMLTextAreaElement; if (ta) pasteToElement(ta); }}
-                className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                วาง
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowRawModal(true); fetchRawMessages(); }}
+                  disabled={loadingRawMessages}
+                  className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
+                >
+                  {loadingRawMessages ? (
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                  ) : (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  )}
+                  ดึงข้อมูลดิบ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { const ta = document.querySelector('textarea[placeholder*="เซลติก"]') as HTMLTextAreaElement; if (ta) pasteToElement(ta); }}
+                  className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  วาง
+                </button>
+              </div>
             </div>
             <textarea
               value={input}
@@ -762,14 +873,29 @@ export default function ParserPage() {
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-slate-300">ข้อมูลจำนวนเงินที่แทง</label>
-              <button
-                type="button"
-                onClick={() => { const ta = document.querySelector('textarea[placeholder*="ต่อเชลติก"]') as HTMLTextAreaElement; if (ta) pasteToElement(ta); }}
-                className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                วาง
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowAmountModal(true); fetchAmountMessages(); }}
+                  disabled={loadingAmountMessages}
+                  className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
+                >
+                  {loadingAmountMessages ? (
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                  ) : (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  )}
+                  ดึงจำนวนเงิน
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { const ta = document.querySelector('textarea[placeholder*="ต่อเชลติก"]') as HTMLTextAreaElement; if (ta) pasteToElement(ta); }}
+                  className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-lg transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  วาง
+                </button>
+              </div>
             </div>
             <textarea
               value={betInput}
@@ -1351,6 +1477,140 @@ export default function ParserPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Raw Messages Modal (สำหรับข้อมูลดิบ) */}
+        {showRawModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 max-w-4xl w-full max-h-[70vh] flex flex-col">
+              <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="text-white font-semibold">ข้อมูลดิบจาก Ball42</h3>
+                <button
+                  onClick={() => setShowRawModal(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-x-auto p-6">
+                {rawMessages.length === 0 ? (
+                  <p className="text-slate-400 text-sm text-center py-8">ไม่มีข้อมูลสำหรับวันนี้</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 text-xs font-medium">
+                        <th className="px-4 py-2 text-left"><input type="checkbox" className="rounded border-slate-600" /></th>
+                        <th className="px-4 py-2 text-left">วันที่</th>
+                        <th className="px-4 py-2 text-left">ชื่อ</th>
+                        <th className="px-4 py-2 text-center">ราคาต่อ</th>
+                        <th className="px-4 py-2 text-center">ราคาน้ำ</th>
+                        <th className="px-4 py-2 text-center">สกอร์(ก่อน)</th>
+                        <th className="px-4 py-2 text-center">จำนวนเงินที่แทง</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/50">
+                      {rawMessages.map(msg => {
+                        const parsed = parseLine(msg.message);
+                        return (
+                          <tr key={msg.id} className="hover:bg-slate-700/30 transition-colors">
+                            <td className="px-4 py-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedRawIds.has(msg.id)}
+                                onChange={() => toggleRawMessageSelection(msg.id)}
+                                disabled={!parsed}
+                                className="rounded border-slate-600 text-green-500 focus:ring-green-500 disabled:opacity-40"
+                              />
+                            </td>
+                            <td className="px-4 py-2 text-slate-400">{new Date(msg.received_at).toLocaleDateString('th-TH')}</td>
+                            <td className="px-4 py-2 text-white font-medium">{parsed?.name || msg.display_name || '-'}</td>
+                            <td className="px-4 py-2 text-center text-yellow-400">{parsed?.handicap || '-'}</td>
+                            <td className="px-4 py-2 text-center text-blue-400">{parsed?.odds || '-'}</td>
+                            <td className="px-4 py-2 text-center text-emerald-400">{parsed?.score || '-'}</td>
+                            <td className="px-4 py-2 text-center text-slate-300">-</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              <div className="px-6 py-4 border-t border-slate-700 flex gap-3">
+                <button
+                  onClick={() => setShowRawModal(false)}
+                  className="flex-1 px-4 py-2 text-slate-400 hover:text-white border border-slate-600 rounded-xl text-sm font-medium transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={importRawMessages}
+                  disabled={selectedRawIds.size === 0}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  นำเข้า ({selectedRawIds.size})
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Amount Messages Modal (สำหรับจำนวนเงิน) */}
+        {showAmountModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 max-w-2xl w-full max-h-[70vh] flex flex-col">
+              <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="text-white font-semibold">จำนวนเงินจาก khanchit</h3>
+                <button
+                  onClick={() => setShowAmountModal(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-2">
+                {amountMessages.length === 0 ? (
+                  <p className="text-slate-400 text-sm text-center py-8">ไม่มีข้อมูลสำหรับวันนี้</p>
+                ) : (
+                  amountMessages.map(msg => (
+                    <label key={msg.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 cursor-pointer transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedAmountIds.has(msg.id)}
+                        onChange={() => toggleAmountMessageSelection(msg.id)}
+                        className="rounded border-slate-600 text-green-500 focus:ring-green-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-white">{msg.display_name || 'Unknown'}</span>
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1 font-mono break-words">{msg.message}</div>
+                        <div className="text-xs text-slate-500 mt-1">{new Date(msg.received_at).toLocaleTimeString('th-TH')}</div>
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+
+              <div className="px-6 py-4 border-t border-slate-700 flex gap-3">
+                <button
+                  onClick={() => setShowAmountModal(false)}
+                  className="flex-1 px-4 py-2 text-slate-400 hover:text-white border border-slate-600 rounded-xl text-sm font-medium transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={importAmountMessages}
+                  disabled={selectedAmountIds.size === 0}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  นำเข้า ({selectedAmountIds.size})
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
