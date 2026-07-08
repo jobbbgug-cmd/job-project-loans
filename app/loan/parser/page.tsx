@@ -1485,7 +1485,7 @@ export default function ParserPage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-slate-800 rounded-2xl border border-slate-700 max-w-4xl w-full max-h-[70vh] flex flex-col">
               <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                <h3 className="text-white font-semibold">ข้อมูลดิบจาก Ball42</h3>
+                <h3 className="text-white font-semibold">ข้อมูลดิบจาก JJOB และ my</h3>
                 <button
                   onClick={() => setShowRawModal(false)}
                   className="text-slate-400 hover:text-white transition-colors"

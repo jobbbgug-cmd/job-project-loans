@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   let query: Record<string, any> = {};
 
   if (type === 'raw') {
-    query.display_name = 'Ball42'; // ข้อมูลดิบจาก Ball42
+    query.display_name = { $in: ['JJOB', 'my'] }; // ข้อมูลดิบจาก JJOB และ my
   } else if (type === 'amount') {
     query.display_name = 'khanchit'; // จำนวนเงินจาก khanchit
   }
