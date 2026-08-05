@@ -209,6 +209,8 @@ export default function PaymentsPage() {
           const interestPaid  = Number(g.loan_interest_paid  ?? 0);
           const totalLoan = Number(g.loan_total_payment ?? 0);
           const remaining = Math.max(0, totalLoan > 0 ? totalLoan - Number(g.loan_paid_amount ?? 0) : Number(g.loan_principal ?? 0) - principalPaid);
+          const principalRemaining = Math.max(0, Number(g.loan_principal ?? 0) - principalPaid);
+          const interestRemaining = Math.max(0, totalLoan > 0 ? totalLoan - principalPaid - interestPaid : 0);
           const paidInstallments = g.payments.filter(p => p.status === 'approved').length;
           const termMonths = Number(g.loan_term_months ?? 0);
           const pct = termMonths > 0 ? Math.min(100, (paidInstallments / termMonths) * 100) : 0;
@@ -239,15 +241,15 @@ export default function PaymentsPage() {
                   )}
                 </div>
 
-                {/* Principal paid / Interest paid / Remaining */}
+                {/* Principal remaining / Interest remaining / Total remaining */}
                 <div className="grid grid-cols-3 gap-1.5 mb-3">
                   <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-lg px-2 py-2">
-                    <div className="text-emerald-400/70 text-[9px] mb-0.5 leading-tight">เงินต้นที่จ่าย</div>
-                    <div className="text-emerald-400 font-bold text-xs">฿{fmt(principalPaid)}</div>
+                    <div className="text-emerald-400/70 text-[9px] mb-0.5 leading-tight">เงินต้นที่ต้องจ่าย</div>
+                    <div className="text-emerald-400 font-bold text-xs">฿{fmt(principalRemaining)}</div>
                   </div>
                   <div className="bg-blue-500/15 border border-blue-500/30 rounded-lg px-2 py-2">
-                    <div className="text-blue-400/70 text-[9px] mb-0.5 leading-tight">ดอกเบี้ยที่จ่าย</div>
-                    <div className="text-blue-400 font-bold text-xs">฿{fmt(interestPaid)}</div>
+                    <div className="text-blue-400/70 text-[9px] mb-0.5 leading-tight">ดอกเบี้ยที่ต้องจ่าย</div>
+                    <div className="text-blue-400 font-bold text-xs">฿{fmt(interestRemaining)}</div>
                   </div>
                   <div className={`rounded-lg px-2 py-2 border ${remaining === 0 ? 'bg-emerald-500/15 border-emerald-500/30' : 'bg-yellow-500/15 border-yellow-500/30'}`}>
                     <div className={`text-[9px] mb-0.5 leading-tight ${remaining === 0 ? 'text-emerald-400/70' : 'text-yellow-400/70'}`}>คงเหลือที่ต้องจ่าย</div>
@@ -283,24 +285,32 @@ export default function PaymentsPage() {
               {isOpen && (
                 <div className="border-t border-slate-700 divide-y divide-slate-700/50">
                   {visiblePayments.map((p, idx) => (
-                    <div key={`${p.id}-${idx}`} className="px-4 py-3 flex items-center gap-3 hover:bg-slate-700/30 transition-colors">
+                    <div key={`${p.id}-${idx}`} className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-slate-700/30 transition-colors text-xs">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-white text-sm font-medium">฿{fmt(Number(p.amount))}</span>
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${PAY_TYPE_COLOR[p.payment_type ?? 'normal'] ?? PAY_TYPE_COLOR.normal}`}>
+                          <span className="text-white font-bold">฿{fmt(Number(p.amount))}</span>
+                          <span className="text-slate-400">|</span>
+                          <span className={`px-2 py-0.5 rounded font-medium ${PAY_TYPE_COLOR[p.payment_type ?? 'normal'] ?? PAY_TYPE_COLOR.normal}`}>
                             {PAY_TYPE_LABEL[p.payment_type ?? 'normal'] ?? p.payment_type}
                           </span>
-                          {p.installment_no && <span className="text-slate-500 text-xs">งวด {p.installment_no}</span>}
+                          {p.installment_no && (
+                            <>
+                              <span className="text-slate-400">|</span>
+                              <span className="text-slate-300">งวด {p.installment_no}</span>
+                            </>
+                          )}
                         </div>
-                        <div className="text-slate-400 text-xs mt-0.5">{fmtDate(p.payment_date)}</div>
+                        <div className="text-slate-500 mt-1">{fmtDate(p.payment_date)}</div>
                       </div>
-                      <Link href={`/loan/payments/${p.id}`}
-                        className="px-2.5 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 !text-white text-xs font-medium flex-shrink-0 transition-colors">
-                        ดูรายละเอียด
-                      </Link>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${STATUS_BADGE[p.status]}`}>
-                        {PAY_STATUS_LABEL[p.status] ?? p.status}
-                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Link href={`/loan/payments/${p.id}`}
+                          className="px-2.5 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 !text-white font-medium transition-colors">
+                          ดูรายละเอียด
+                        </Link>
+                        <span className={`px-2 py-0.5 rounded font-medium ${STATUS_BADGE[p.status]}`}>
+                          {PAY_STATUS_LABEL[p.status] ?? p.status}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
