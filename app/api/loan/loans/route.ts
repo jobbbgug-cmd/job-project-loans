@@ -140,22 +140,47 @@ export async function POST(request: NextRequest) {
         balance  = Math.max(0, Math.round((balance - pc) * 100) / 100);
         const dd = new Date(loanStart);
         dd.setMonth(dd.getMonth() + row.installment_no);
-        const schedId = await nextId('payment_schedule');
-        await db.collection('payment_schedule').insertOne({
-          id: schedId, loan_id: loanId, installment_no: row.installment_no,
-          due_date: dd.toISOString().split('T')[0],
-          principal_component: pc, interest_component: ic,
-          due_amount: Math.round((pc + ic) * 100) / 100,
-          outstanding_balance: balance, status: 'pending', paid_date: null,
-        });
+
+        // Retry loop to handle duplicate id
+        let inserted = false;
+        for (let attempts = 0; attempts < 5; attempts++) {
+          const schedId = await nextId('payment_schedule');
+          try {
+            await db.collection('payment_schedule').insertOne({
+              id: schedId, loan_id: loanId, installment_no: row.installment_no,
+              due_date: dd.toISOString().split('T')[0],
+              principal_component: pc, interest_component: ic,
+              due_amount: Math.round((pc + ic) * 100) / 100,
+              outstanding_balance: balance, status: 'pending', paid_date: null,
+            });
+            inserted = true;
+            break;
+          } catch (err: any) {
+            if (err.code === 11000) continue;
+            throw err;
+          }
+        }
+        if (!inserted) throw new Error('Failed to create schedule entry');
       }
     } else {
       const schedule = buildSchedule(Number(principal), Number(interest_rate), Number(term_months), monthlyPayment, loanStart);
       for (const row of schedule) {
-        const schedId = await nextId('payment_schedule');
-        await db.collection('payment_schedule').insertOne({
-          id: schedId, loan_id: loanId, ...row, status: 'pending', paid_date: null,
-        });
+        // Retry loop to handle duplicate id
+        let inserted = false;
+        for (let attempts = 0; attempts < 5; attempts++) {
+          const schedId = await nextId('payment_schedule');
+          try {
+            await db.collection('payment_schedule').insertOne({
+              id: schedId, loan_id: loanId, ...row, status: 'pending', paid_date: null,
+            });
+            inserted = true;
+            break;
+          } catch (err: any) {
+            if (err.code === 11000) continue;
+            throw err;
+          }
+        }
+        if (!inserted) throw new Error('Failed to create schedule entry');
       }
     }
   }
