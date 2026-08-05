@@ -142,8 +142,8 @@ export default function PaymentsPage() {
                 <th className="px-4 py-3" />
               </tr></thead>
               <tbody className="divide-y divide-slate-700/50">
-                {filtered.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-700/30 transition-colors">
+                {filtered.map((p, idx) => (
+                  <tr key={`${p.id}-${idx}`} className="hover:bg-slate-700/30 transition-colors">
                     <td className="px-4 py-3 text-blue-400 font-mono text-xs">{p.payment_number ?? '—'}</td>
                     <td className="px-4 py-3 text-white">{p.customer_name}</td>
                     <td className="px-4 py-3 text-slate-300">{p.installment_no ? `งวด ${p.installment_no}` : '—'}</td>
