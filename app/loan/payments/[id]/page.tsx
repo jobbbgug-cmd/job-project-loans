@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -27,6 +27,7 @@ function fmt(n: number) { return new Intl.NumberFormat('th-TH', { maximumFractio
 function fmtDate(s: string) { return new Date(s).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }); }
 
 export default function PaymentDetailPage() {
+  const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const backHref = searchParams.get('from') ?? '/loan/payments';
@@ -61,7 +62,11 @@ export default function PaymentDetailPage() {
     if (!res.ok) { setError((data as { error?: string }).error || t.paymentDetail.failed); setActing(false); return; }
     setShowReject(false); setRejectReason('');
     showToast('บันทึกสำเร็จ');
-    await load();
+    if (action === 'approve' && payment) {
+      router.push(`/loan/loans/${payment.loan_id}`);
+    } else {
+      await load();
+    }
   }
 
   if (loading) return <div className="text-slate-400 text-sm">{t.paymentDetail.loading}</div>;

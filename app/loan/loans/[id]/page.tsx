@@ -7,7 +7,7 @@ import { useLang } from '@/contexts/LangContext';
 import { useToast } from '@/contexts/ToastContext';
 import { blobProxy } from '@/lib/blob-url';
 
-interface Loan { id: number; loan_number: string; customer_name: string; customer_email: string; principal: number; interest_rate: number; term_months: number; monthly_payment: number; status: string; start_date: string; paid_amount: number; purpose: string; notes: string; created_at: string; }
+interface Loan { id: number; loan_number: string; customer_name: string; customer_email: string; principal: number; interest_rate: number; term_months: number; monthly_payment: number; status: string; start_date: string; paid_amount: number; principal_paid?: number; interest_paid?: number; purpose: string; notes: string; created_at: string; }
 interface Schedule { id: number; installment_no: number; due_date: string; principal_component: number; interest_component: number; amount: number; remaining_balance: number; status: string; paid_date: string | null; }
 interface Document { id: number; file_name: string; file_path: string; created_at: string; uploaded_by_name: string; }
 interface Payment { id: number; payment_number: string | null; amount: number; payment_date: string; notes: string; status: string; verifier_name: string | null; installment_no: number | null; due_date: string | null; slip_path: string | null; created_at: string; payment_type?: string; }
@@ -117,8 +117,9 @@ export default function LoanDetailPage() {
   const progressApproved = loan.principal > 0 ? Math.min(100, (approvedPaid / loan.principal) * 100) : 0;
   const progressPending = loan.principal > 0 ? Math.min(100 - progressApproved, (pendingPaid / loan.principal) * 100) : 0;
   const paidSchedules = schedule.filter(s => s.status === 'paid');
-  const principalPaid = paidSchedules.reduce((s, r) => s + Number(r.principal_component ?? 0), 0);
-  const interestPaid = paidSchedules.reduce((s, r) => s + Number(r.interest_component ?? 0), 0);
+  // Use API-computed values if available (open-ended loans), else sum from schedules
+  const principalPaid = loan.principal_paid !== undefined ? loan.principal_paid : paidSchedules.reduce((s, r) => s + Number(r.principal_component ?? 0), 0);
+  const interestPaid = loan.interest_paid !== undefined ? loan.interest_paid : paidSchedules.reduce((s, r) => s + Number(r.interest_component ?? 0), 0);
 
   return (
     <div className="space-y-5">

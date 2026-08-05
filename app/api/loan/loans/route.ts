@@ -39,15 +39,52 @@ export async function GET(request: NextRequest) {
       ],
       as: 'schedule_agg',
     } },
+    { $lookup: {
+      from: 'payments',
+      let: { loanId: '$id' },
+      pipeline: [
+        { $match: { $expr: { $and: [{ $eq: ['$loan_id', '$$loanId'] }, { $eq: ['$status', 'approved'] }, { $in: ['$payment_type', ['principal', 'interest']] }] } } },
+        { $group: { _id: '$payment_type', total: { $sum: '$amount' } } },
+      ],
+      as: 'payment_type_agg',
+    } },
     { $addFields: {
       customer_name: '$customer.name',
       customer_email: '$customer.email',
       staff_name: '$staff.name',
       paid_amount: { $ifNull: [{ $arrayElemAt: ['$paid_agg.total', 0] }, 0] },
-      principal_paid: { $ifNull: [{ $arrayElemAt: ['$schedule_agg.principal', 0] }, 0] },
-      interest_paid:  { $ifNull: [{ $arrayElemAt: ['$schedule_agg.interest', 0] }, 0] },
+      principal_paid: {
+        $let: {
+          vars: {
+            schedPrincipal: { $ifNull: [{ $arrayElemAt: ['$schedule_agg.principal', 0] }, 0] },
+            paymentPrincipal: {
+              $reduce: {
+                input: '$payment_type_agg',
+                initialValue: 0,
+                in: { $cond: [{ $eq: ['$$this._id', 'principal'] }, { $add: ['$$value', '$$this.total'] }, '$$value'] }
+              }
+            }
+          },
+          in: { $add: ['$$schedPrincipal', '$$paymentPrincipal'] }
+        }
+      },
+      interest_paid: {
+        $let: {
+          vars: {
+            schedInterest: { $ifNull: [{ $arrayElemAt: ['$schedule_agg.interest', 0] }, 0] },
+            paymentInterest: {
+              $reduce: {
+                input: '$payment_type_agg',
+                initialValue: 0,
+                in: { $cond: [{ $eq: ['$$this._id', 'interest'] }, { $add: ['$$value', '$$this.total'] }, '$$value'] }
+              }
+            }
+          },
+          in: { $add: ['$$schedInterest', '$$paymentInterest'] }
+        }
+      },
     } },
-    { $project: { _id: 0, customer: 0, staff: 0, paid_agg: 0, schedule_agg: 0 } },
+    { $project: { _id: 0, customer: 0, staff: 0, paid_agg: 0, schedule_agg: 0, payment_type_agg: 0 } },
     { $sort: { created_at: -1 } },
   ];
 
