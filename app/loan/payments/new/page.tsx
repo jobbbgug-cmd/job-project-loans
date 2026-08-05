@@ -72,7 +72,14 @@ export default function NewPaymentPage() {
 
   function onLoanChange(loan_id: string) {
     const selected = loans.find(l => String(l.id) === loan_id);
-    setForm(f => ({ ...f, loan_id, schedule_id: '', amount: selected && selected.term_months !== 0 ? String(selected.monthly_payment) : '' }));
+    const isOpen = selected && selected.term_months === 0;
+    setForm(f => ({
+      ...f,
+      loan_id,
+      schedule_id: '',
+      amount: selected && selected.term_months !== 0 ? String(selected.monthly_payment) : '',
+      payment_type: isOpen ? 'principal' : 'normal',
+    }));
     setSchedules([]);
     setIsOpenEnded(false);
     if (loan_id && selected) fetchSchedule(loan_id, selected);
@@ -137,18 +144,24 @@ export default function NewPaymentPage() {
 
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">ประเภทการชำระ</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className={`grid gap-2 ${isOpenEnded ? 'grid-cols-2' : 'grid-cols-3'}`}>
             {([
               { value: 'normal',   label: 'ชำระปกติ', active: 'bg-yellow-600 !text-white',  inactive: 'bg-slate-700 text-slate-400 hover:text-white' },
               { value: 'principal', label: 'เงินต้น',  active: 'bg-emerald-600 !text-white', inactive: 'bg-slate-700 text-slate-400 hover:text-white' },
               { value: 'interest', label: 'ดอกเบี้ย', active: 'bg-blue-600 !text-white',    inactive: 'bg-slate-700 text-slate-400 hover:text-white' },
-            ] as const).map(opt => (
+            ] as const)
+              .filter(opt => !isOpenEnded || opt.value !== 'normal')
+              .map(opt => (
               <button key={opt.value} type="button" onClick={() => set('payment_type', opt.value)}
-                className={`py-2 rounded-lg text-sm font-medium transition-colors ${form.payment_type === opt.value ? opt.active : opt.inactive}`}>
+                disabled={isOpenEnded && opt.value === 'normal'}
+                className={`py-2 rounded-lg text-sm font-medium transition-colors ${form.payment_type === opt.value ? opt.active : opt.inactive} ${isOpenEnded && opt.value === 'normal' ? 'opacity-30 cursor-not-allowed' : ''}`}>
                 {opt.label}
               </button>
             ))}
           </div>
+          {isOpenEnded && (
+            <p className="text-xs text-slate-400 mt-2">สินเชื่อกำหนดไม่ได้ → เลือกได้เพียง "เงินต้น" หรือ "ดอกเบี้ย"</p>
+          )}
         </div>
 
         {isOpenEnded ? (
