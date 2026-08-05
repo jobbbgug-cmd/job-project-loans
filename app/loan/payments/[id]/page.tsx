@@ -109,11 +109,10 @@ export default function PaymentDetailPage() {
           <div><p className="text-slate-400 text-xs mb-0.5">{t.paymentDetail.paymentDate}</p><p className="text-white">{fmtDate(payment.payment_date)}</p></div>
           <div><p className="text-slate-400 text-xs mb-0.5">งวด</p><p className="text-white">{payment.installment_no ? `งวดที่ ${payment.installment_no}` : '—'}</p></div>
           <div><p className="text-slate-400 text-xs mb-0.5">{t.paymentDetail.submitted}</p><p className="text-white">{fmtDate(payment.created_at)}</p></div>
-          {payment.verified_at && (
+          {payment.status === 'approved' && (
             <div>
-              <p className="text-slate-400 text-xs mb-0.5">{t.paymentDetail.verified}</p>
-              <p className="text-white">{fmtDate(payment.verified_at)}</p>
-              <p className="text-slate-400 text-xs">{t.paymentDetail.verifiedBy} {payment.verifier_name}</p>
+              <p className="text-slate-400 text-xs mb-0.5">ชำระแล้ว</p>
+              <p className="text-white">{fmtDate(payment.payment_date)}</p>
             </div>
           )}
           {payment.notes && (
