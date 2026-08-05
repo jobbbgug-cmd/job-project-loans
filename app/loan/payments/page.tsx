@@ -267,8 +267,8 @@ export default function PaymentsPage() {
               {/* Expanded payment list */}
               {isOpen && (
                 <div className="border-t border-slate-700 divide-y divide-slate-700/50">
-                  {visiblePayments.map(p => (
-                    <div key={p.id} className="px-4 py-3 flex items-center gap-3 hover:bg-slate-700/30 transition-colors">
+                  {visiblePayments.map((p, idx) => (
+                    <div key={`${p.id}-${idx}`} className="px-4 py-3 flex items-center gap-3 hover:bg-slate-700/30 transition-colors">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-white text-sm font-medium">฿{fmt(Number(p.amount))}</span>

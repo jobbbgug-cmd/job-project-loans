@@ -332,8 +332,8 @@ export default function LoanDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-700/30 transition-colors">
+                {payments.map((p, idx) => (
+                  <tr key={`${p.id}-${idx}`} className="hover:bg-slate-700/30 transition-colors">
                     <td className="px-4 py-3 text-blue-400 font-mono text-xs">{p.payment_number ?? '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${PTYPE_BADGE[p.payment_type ?? 'normal'] ?? PTYPE_BADGE.normal}`}>
@@ -371,8 +371,8 @@ export default function LoanDetailPage() {
 
           {/* Mobile cards */}
           <div className="md:hidden divide-y divide-slate-700/50">
-            {payments.map((p) => (
-              <div key={p.id} className="px-4 py-3.5">
+            {payments.map((p, idx) => (
+              <div key={`${p.id}-${idx}`} className="px-4 py-3.5">
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-blue-400 font-mono text-xs mb-0.5">{p.payment_number ?? '—'}</p>
