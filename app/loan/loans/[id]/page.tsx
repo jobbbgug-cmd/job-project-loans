@@ -10,7 +10,7 @@ import { blobProxy } from '@/lib/blob-url';
 interface Loan { id: number; loan_number: string; customer_name: string; customer_email: string; principal: number; interest_rate: number; term_months: number; monthly_payment: number; status: string; start_date: string; paid_amount: number; purpose: string; notes: string; created_at: string; }
 interface Schedule { id: number; installment_no: number; due_date: string; principal_component: number; interest_component: number; amount: number; remaining_balance: number; status: string; paid_date: string | null; }
 interface Document { id: number; file_name: string; file_path: string; created_at: string; uploaded_by_name: string; }
-interface Payment { id: number; payment_number: string | null; amount: number; payment_date: string; note: string; status: string; verifier_name: string | null; installment_no: number | null; due_date: string | null; slip_path: string | null; created_at: string; payment_type?: string; }
+interface Payment { id: number; payment_number: string | null; amount: number; payment_date: string; notes: string; status: string; verifier_name: string | null; installment_no: number | null; due_date: string | null; slip_path: string | null; created_at: string; payment_type?: string; }
 interface User { role: string; }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -346,7 +346,7 @@ export default function LoanDetailPage() {
                     <td className="px-4 py-3">
                       {p.slip_path ? <a href={blobProxy(p.slip_path)!} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 text-xs underline">ดูสลิป</a> : <span className="text-slate-500 text-xs">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{p.note || '—'}</td>
+                    <td className="px-4 py-3 text-slate-400 text-xs">{p.notes || '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_BADGE[p.status] ?? 'bg-slate-500/20 text-slate-400'}`}>
                         {t.status[p.status as keyof typeof t.status] ?? p.status}
