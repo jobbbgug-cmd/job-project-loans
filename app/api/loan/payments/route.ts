@@ -30,7 +30,14 @@ export async function GET(request: NextRequest) {
     { $unwind: '$customer' },
     { $lookup: { from: 'users', localField: 'verified_by', foreignField: 'id', as: 'verifier' } },
     { $unwind: { path: '$verifier', preserveNullAndEmptyArrays: true } },
-    { $lookup: { from: 'payment_schedule', localField: 'schedule_id', foreignField: 'id', as: 'schedule' } },
+    { $lookup: {
+      from: 'payment_schedule',
+      let: { schedId: '$schedule_id', loanId: '$loan_id' },
+      pipeline: [
+        { $match: { $expr: { $and: [{ $eq: ['$id', '$$schedId'] }, { $eq: ['$loan_id', '$$loanId'] }] } } },
+      ],
+      as: 'schedule',
+    } },
     { $unwind: { path: '$schedule', preserveNullAndEmptyArrays: true } },
     // Loan-level principal/interest totals from paid schedule entries (accurate regardless of per-payment schedule linkage)
     { $lookup: {
