@@ -115,48 +115,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // For open-ended loans (term_months=0), auto-create a schedule entry
+  // Open-ended loans (term_months=0) don't use payment_schedule
+  // Payment records track principal/interest directly via payment_type field
   let finalScheduleId: number | null = scheduleId ? Number(scheduleId) : null;
-  if (loan.term_months === 0 && !scheduleId) {
-    const count = await db.collection('payment_schedule').countDocuments({ loan_id: Number(loanId) });
-    const loanIdNum = Number(loanId);
-    const principalComp = paymentType === 'interest' ? 0 : Number(amount);
-    const interestComp  = paymentType === 'interest' ? Number(amount) : 0;
-
-    // Retry loop to handle duplicate id (ensure (id, loan_id) is unique)
-    let schedId: number;
-    let inserted = false;
-    for (let attempts = 0; attempts < 5; attempts++) {
-      schedId = await nextId('payment_schedule');
-      try {
-        await db.collection('payment_schedule').insertOne({
-          id: schedId,
-          loan_id: loanIdNum,
-          installment_no: count + 1,
-          due_date: paymentDate,
-          principal_component: principalComp,
-          interest_component: interestComp,
-          due_amount: Number(amount),
-          outstanding_balance: 0,
-          status: 'pending',
-          paid_date: null,
-        });
-        inserted = true;
-        break;
-      } catch (err: any) {
-        if (err.code === 11000) {
-          // Duplicate key on (id, loan_id) - retry with new id
-          continue;
-        }
-        throw err;
-      }
-    }
-
-    if (!inserted) {
-      throw new Error('Failed to create schedule entry after retries');
-    }
-    finalScheduleId = schedId;
-  }
 
   // Check if payment is late
   let isLate = false;
