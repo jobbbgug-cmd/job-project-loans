@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useLang } from '@/contexts/LangContext';
 import { blobProxy } from '@/lib/blob-url';
 
-interface Payment { id: number; loan_id: number; payment_number: string | null; loan_number: string; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; verified_at: string | null; loan_principal: number; loan_paid_amount: number; loan_total_payment: number; loan_term_months: number; principal_component: number | null; interest_component: number | null; loan_principal_paid: number; loan_interest_paid: number; }
+interface Payment { id: number; loan_id: number; payment_number: string | null; loan_number: string; customer_name: string; installment_no: number | null; amount: number; payment_date: string; slip_path: string | null; status: string; notes: string; verified_at: string | null; loan_principal: number; loan_paid_amount: number; loan_total_payment: number; loan_term_months: number; principal_component: number | null; interest_component: number | null; loan_principal_paid: number; loan_interest_paid: number; payment_type?: string; }
 interface User { role: string; }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -13,6 +13,14 @@ const STATUS_BADGE: Record<string, string> = {
 };
 const PAY_STATUS_LABEL: Record<string, string> = {
   pending: 'รออนุมัติ', approved: 'อนุมัติ', rejected: 'ปฏิเสธ',
+};
+const PAY_TYPE_LABEL: Record<string, string> = {
+  principal: 'ต้น', interest: 'ดอกเบี้ย', normal: 'ปกติ',
+};
+const PAY_TYPE_COLOR: Record<string, string> = {
+  principal: 'bg-emerald-500/20 text-emerald-400',
+  interest: 'bg-blue-500/20 text-blue-400',
+  normal: 'bg-slate-500/20 text-slate-400',
 };
 
 function fmt(n: number) { return new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 }).format(n); }
@@ -147,7 +155,14 @@ export default function PaymentsPage() {
                     <td className="px-4 py-3 text-blue-400 font-mono text-xs">{p.payment_number ?? '—'}</td>
                     <td className="px-4 py-3 text-white">{p.customer_name}</td>
                     <td className="px-4 py-3 text-slate-300">{p.installment_no ? `งวด ${p.installment_no}` : '—'}</td>
-                    <td className="px-4 py-3 text-white font-medium">฿{fmt(Number(p.amount))}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">฿{fmt(Number(p.amount))}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${PAY_TYPE_COLOR[p.payment_type ?? 'normal'] ?? PAY_TYPE_COLOR.normal}`}>
+                          {PAY_TYPE_LABEL[p.payment_type ?? 'normal'] ?? p.payment_type}
+                        </span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-emerald-400">฿{fmt(Number(p.principal_component ?? 0))}</td>
                     <td className="px-4 py-3 text-blue-400">฿{fmt(Number(p.interest_component ?? 0))}</td>
                     <td className="px-4 py-3 text-slate-300">{fmtDate(p.payment_date)}</td>
