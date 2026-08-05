@@ -285,8 +285,11 @@ export default function PaymentsPage() {
                   {visiblePayments.map((p, idx) => (
                     <div key={`${p.id}-${idx}`} className="px-4 py-3 flex items-center gap-3 hover:bg-slate-700/30 transition-colors">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-white text-sm font-medium">฿{fmt(Number(p.amount))}</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${PAY_TYPE_COLOR[p.payment_type ?? 'normal'] ?? PAY_TYPE_COLOR.normal}`}>
+                            {PAY_TYPE_LABEL[p.payment_type ?? 'normal'] ?? p.payment_type}
+                          </span>
                           {p.installment_no && <span className="text-slate-500 text-xs">งวด {p.installment_no}</span>}
                         </div>
                         <div className="text-slate-400 text-xs mt-0.5">{fmtDate(p.payment_date)}</div>
