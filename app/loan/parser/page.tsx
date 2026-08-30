@@ -1003,6 +1003,14 @@ export default function ParserPage() {
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                   เพิ่มรายการ
                 </button>
+                {/* จัดเรียงตามชื่อ */}
+                <button
+                  onClick={() => setRows([...rows].sort((a, b) => a.name.localeCompare(b.name, 'th')))}
+                  className="flex items-center gap-1.5 text-xs font-medium text-blue-300 hover:text-blue-100 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/40 hover:border-blue-400/60 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                  จัดเรียงตามชื่อ
+                </button>
                 {/* ล้างตาราง */}
                 <button
                   onClick={clearAll}
