@@ -1193,42 +1193,18 @@ export default function ParserPage() {
                             removeContainer: true,
                             onclone: (clonedDocument) => {
                               try {
-                                // Remove all stylesheets that might contain modern color functions
-                                Array.from(clonedDocument.querySelectorAll('style, link[rel="stylesheet"]')).forEach(el => {
-                                  if (el.tagName === 'STYLE') {
-                                    const sheet = el as HTMLStyleElement;
-                                    if (sheet.textContent && (sheet.textContent.includes('lab(') || sheet.textContent.includes('oklab(') || sheet.textContent.includes('lch(') || sheet.textContent.includes('oklch('))) {
-                                      el.remove();
-                                    }
-                                  }
-                                });
+                                // Remove HEAD completely to avoid CSS parsing issues
+                                const head = clonedDocument.querySelector('head');
+                                if (head) {
+                                  head.innerHTML = '';
+                                }
 
-                                const style = clonedDocument.createElement('style');
-                                style.textContent = `
-                                  * {
-                                    color-scheme: light !important;
-                                    filter: none !important;
-                                    box-shadow: none !important;
-                                  }
-                                  body {
-                                    background-color: #1e293b !important;
-                                    color: #e2e8f0 !important;
-                                  }
-                                  .border-t-2 { border-top-color: #475569 !important; }
-                                  .bg-slate-700 { background-color: #334155 !important; }
-                                  .text-slate-400 { color: #94a3b8 !important; }
-                                  .text-white { color: #ffffff !important; }
-                                  .text-emerald-400 { color: #34d399 !important; }
-                                  .text-red-400 { color: #f87171 !important; }
-                                  .text-sky-300 { color: #0ea5e9 !important; }
-                                  .text-amber-300 { color: #fcd34d !important; }
-                                `;
-                                clonedDocument.head.appendChild(style);
-
+                                // Add minimal inline styles to cloned elements
                                 clonedDocument.querySelectorAll('*').forEach((el) => {
                                   const element = el as HTMLElement;
-                                  const cssText = element.style.cssText;
-                                  if (cssText && (cssText.includes('lab(') || cssText.includes('oklab(') || cssText.includes('lch(') || cssText.includes('oklch('))) {
+                                  // Preserve only basic styling, remove problematic colors
+                                  const cssText = element.style.cssText || '';
+                                  if (cssText) {
                                     const cleaned = cssText
                                       .replace(/lab\([^)]*\)/g, '#94a3b8')
                                       .replace(/oklab\([^)]*\)/g, '#94a3b8')
@@ -1236,6 +1212,15 @@ export default function ParserPage() {
                                       .replace(/oklch\([^)]*\)/g, '#94a3b8');
                                     element.style.cssText = cleaned;
                                   }
+                                  // Force basic styling
+                                  if (element.classList.contains('text-white')) element.style.color = '#ffffff';
+                                  if (element.classList.contains('text-slate-400')) element.style.color = '#94a3b8';
+                                  if (element.classList.contains('text-emerald-400')) element.style.color = '#34d399';
+                                  if (element.classList.contains('text-red-400')) element.style.color = '#f87171';
+                                  if (element.classList.contains('text-sky-300')) element.style.color = '#0ea5e9';
+                                  if (element.classList.contains('text-amber-300')) element.style.color = '#fcd34d';
+                                  if (element.classList.contains('bg-slate-700')) element.style.backgroundColor = '#334155';
+                                  if (element.classList.contains('border-t-2')) element.style.borderTopColor = '#475569';
                                 });
                               } catch (e) {
                                 console.error('Error in onclone:', e);
