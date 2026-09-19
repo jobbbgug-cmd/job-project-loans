@@ -92,12 +92,30 @@ function stepFactor(result: string, odds: number): number | null {
   }
 }
 
-function calcStepReturn(bet: number, children: SubRow[]): number | null {
+function getSubRowDisplayData(subRow: SubRow, allRows: Row[]): SubRow {
+  if (subRow.linkedRowIndex !== undefined && subRow.linkedRowIndex >= 0) {
+    const linkedRow = allRows[subRow.linkedRowIndex];
+    if (linkedRow) {
+      return {
+        ...subRow,
+        handicap: linkedRow.handicap,
+        odds: linkedRow.odds,
+        score: linkedRow.score,
+        scoreFinal: linkedRow.scoreFinal,
+        result: linkedRow.result,
+      };
+    }
+  }
+  return subRow;
+}
+
+function calcStepReturn(bet: number, children: SubRow[], allRows: Row[]): number | null {
   if (!children.length || !bet || bet <= 0) return null;
   let factor = 1;
   for (const sub of children) {
-    if (!sub.result) return null;
-    const f = stepFactor(sub.result, Number(sub.odds));
+    const displayData = getSubRowDisplayData(sub, allRows);
+    if (!displayData.result) return null;
+    const f = stepFactor(displayData.result, Number(displayData.odds));
     if (f === null) return null;
     if (f === 0) return 0;
     factor *= f;
@@ -105,9 +123,9 @@ function calcStepReturn(bet: number, children: SubRow[]): number | null {
   return r2(bet * factor);
 }
 
-function calcSummary(row: Row): number | null {
+function calcSummary(row: Row, allRows?: Row[]): number | null {
   if ((row.children ?? []).length > 0) {
-    return calcStepReturn(Number(row.betAmount), row.children ?? []);
+    return calcStepReturn(Number(row.betAmount), row.children ?? [], allRows ?? []);
   }
   const bet  = Number(row.betAmount);
   const odds = Number(row.odds);
@@ -485,7 +503,7 @@ export default function ParserPage() {
     setArchiving(true);
     setArchiveError('');
     const sumBet    = r2(rows.reduce((s, r) => s + (Number(r.betAmount) || 0), 0));
-    const sumResult = r2(rows.reduce((s, r) => { const v = calcSummary(r); return s + (v ?? 0); }, 0));
+    const sumResult = r2(rows.reduce((s, r) => { const v = calcSummary(r, rows); return s + (v ?? 0); }, 0));
     const profit    = r2(sumBet - sumResult);
     const label     = `สรุปวันที่ ${fmtDate(todayStr())}`;
     try {
@@ -577,24 +595,6 @@ export default function ParserPage() {
       return a;
     });
     setSaved(false);
-  }
-
-  function getSubRowDisplayData(subRow: SubRow, allRows: Row[]): SubRow {
-    // If linked to a main row, pull data from it
-    if (subRow.linkedRowIndex !== undefined && subRow.linkedRowIndex >= 0) {
-      const linkedRow = allRows[subRow.linkedRowIndex];
-      if (linkedRow) {
-        return {
-          ...subRow,
-          handicap: linkedRow.handicap,
-          odds: linkedRow.odds,
-          score: linkedRow.score,
-          scoreFinal: linkedRow.scoreFinal,
-          result: linkedRow.result, // Also link result
-        };
-      }
-    }
-    return subRow;
   }
 
   function updateSubRow(i: number, j: number, field: keyof SubRow, value: string) {
@@ -706,7 +706,7 @@ export default function ParserPage() {
       rows.forEach((row, i) => {
         const y  = headH + i * rowH;
         fill(0, y, totalW, rowH, i % 2 === 0 ? '#1e293b' : '#1b2a3b');
-        const sv = calcSummary(row);
+        const sv = calcSummary(row, rows);
         const cells: [string, string, boolean?, CanvasTextAlign?][] = [
           [String(i + 1),                                                               '#64748b'],
           [row.date ? fmtDate(row.date) : '—',                                         '#cbd5e1'],
@@ -762,7 +762,7 @@ export default function ParserPage() {
   }
 
   const sumBet     = r2(rows.reduce((s, r) => s + (Number(r.betAmount) || 0), 0));
-  const sumSummary = r2(rows.reduce((s, r) => { const v = calcSummary(r); return s + (v ?? 0); }, 0));
+  const sumSummary = r2(rows.reduce((s, r) => { const v = calcSummary(r, rows); return s + (v ?? 0); }, 0));
 
   const archiveReady = rows.length > 0
     && rows.every(r => Number(r.betAmount) > 0)
@@ -791,7 +791,7 @@ export default function ParserPage() {
     ? [
         ['วันที่', 'ชื่อ', 'ราคาต่อ', 'ราคาน้ำ', 'สกอร์(ก่อน)', 'สกอร์(จบ)', 'จำนวนเงินที่แทง', 'ผลลัพธ์', 'ผลสรุป'].join('\t'),
         ...rows.map(r => {
-          const sv = calcSummary(r);
+          const sv = calcSummary(r, rows);
           return [
             r.date ? fmtDate(r.date) : '',
             r.name,
@@ -1024,7 +1024,7 @@ export default function ParserPage() {
             {/* ── Mobile cards ─────────────────────────────────────────── */}
             <div className="md:hidden divide-y divide-slate-700/50">
               {rows.map((row, i) => {
-                const sv = calcSummary(row);
+                const sv = calcSummary(row, rows);
                 return (
                   <div key={i} className="px-4 py-3 space-y-2.5">
                     {/* Name + delete */}
@@ -1240,7 +1240,7 @@ export default function ParserPage() {
                               </select>
                             </td>
                             <td className="px-3 py-2 text-center">
-                              {(() => { const v = calcSummary(editForm); return v === null ? <span className="text-slate-600 text-xs">—</span> : <span className={`font-mono text-xs font-semibold ${editForm.result === 'draw' ? 'text-yellow-400' : v > 0 ? 'text-emerald-400' : v === 0 ? 'text-red-400' : 'text-slate-300'}`}>{fmtSummary(v)}</span>; })()}
+                              {(() => { const v = calcSummary(editForm, rows); return v === null ? <span className="text-slate-600 text-xs">—</span> : <span className={`font-mono text-xs font-semibold ${editForm.result === 'draw' ? 'text-yellow-400' : v > 0 ? 'text-emerald-400' : v === 0 ? 'text-red-400' : 'text-slate-300'}`}>{fmtSummary(v)}</span>; })()}
                             </td>
                             <td className="px-3 py-2">
                               <div className="flex items-center gap-1.5 justify-center">
@@ -1280,19 +1280,15 @@ export default function ParserPage() {
                               <input type="number" min={0} value={row.betAmount} onChange={e => updateCell(i, 'betAmount', e.target.value)}
                                 placeholder="0" className="w-24 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-yellow-500 text-center font-mono" />
                             </td>
-                            {(row.children ?? []).length > 0 ? (
-                              <td></td>
-                            ) : (
-                              <td className="px-3 py-2.5 text-center">
-                                <select value={row.result} onChange={e => updateCell(i, 'result', e.target.value)}
-                                  className={`rounded px-2 py-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-yellow-500 ${RESULT_STYLES[row.result] ?? RESULT_STYLES['']}`}>
-                                  {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                </select>
-                              </td>
-                            )}
+                            <td className="px-3 py-2.5 text-center">
+                              <select value={row.result} onChange={e => updateCell(i, 'result', e.target.value)}
+                                className={`rounded px-2 py-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-yellow-500 ${RESULT_STYLES[row.result] ?? RESULT_STYLES['']}`}>
+                                {RESULT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                              </select>
+                            </td>
                             <td className="px-3 py-2.5 text-center">
                               {(() => {
-                                const v = calcSummary(row);
+                                const v = calcSummary(row, rows);
                                 if (v === null) return <span className="text-slate-600 text-xs">—</span>;
                                 const isStep = (row.children ?? []).length > 0;
                                 const vColor = isStep
@@ -1420,7 +1416,7 @@ export default function ParserPage() {
                     {/* ผลสรุป */}
                     <td className="px-3 py-3 text-center">
                       <span className={`font-mono ${sumSummary > 0 ? 'text-emerald-400' : sumSummary === 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                        {rows.some(r => r.result) ? sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}
+                        {rows.some(r => r.result || (r.children ?? []).length > 0) ? sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}
                       </span>
                     </td>
                     {/* actions */}
