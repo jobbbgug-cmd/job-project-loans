@@ -1403,31 +1403,53 @@ export default function ParserPage() {
                 <tfoot>
                   <tr className="border-t-2 border-slate-600 bg-slate-700/40 text-xs font-semibold">
                     {/* # + วันที่ + ชื่อ + ราคาต่อ + ราคาน้ำ + สกอร์(ก่อน) + สกอร์(จบ) */}
-                    <td className="px-3 py-3 text-slate-400" colSpan={7}>รวม</td>
+                    <td className="px-3 py-3 text-slate-400" colSpan={7}>รวมเงินที่แทง</td>
                     {/* จำนวนเงินที่แทง */}
                     <td className="px-3 py-3 text-center">
                       <span className="font-mono text-white">{sumBet > 0 ? sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}</span>
                     </td>
-                    {/* ผลลัพธ์ — input จำนวนเงินที่โอนเข้ามา */}
+                    <td colSpan={3}></td>
+                  </tr>
+                  <tr className="border-t border-slate-700 bg-slate-700/20 text-xs font-semibold">
+                    <td className="px-3 py-3 text-slate-400" colSpan={7}>เงินที่โอนเข้ามา</td>
                     <td className="px-3 py-3 text-center">
                       <input
                         type="number"
                         min={0}
                         value={transferAmount}
                         onChange={e => setTransferAmount(e.target.value)}
-                        placeholder="เงินที่โอนเข้ามา"
+                        placeholder="0"
                         className="w-32 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center font-mono"
                       />
                     </td>
-                    {/* ผลสรุป */}
-                    <td className="px-3 py-3 text-center">
-                      <span className={`font-mono ${sumSummary > 0 ? 'text-emerald-400' : sumSummary === 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                        {rows.some(r => r.result || (r.children ?? []).length > 0) ? sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}
-                      </span>
-                    </td>
-                    {/* actions */}
-                    <td></td>
+                    <td colSpan={3}></td>
                   </tr>
+                  {rows.some(r => r.result || (r.children ?? []).length > 0) && (
+                    <tr className="border-t border-slate-700 bg-slate-700/20 text-xs font-semibold">
+                      <td className="px-3 py-3 text-slate-400" colSpan={7}>ผลสรุปรวม</td>
+                      <td className="px-3 py-3 text-center">
+                        <span className={`font-mono ${sumSummary > 0 ? 'text-emerald-400' : sumSummary === 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                          {sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td colSpan={3}></td>
+                    </tr>
+                  )}
+                  {rows.some(r => r.result || (r.children ?? []).length > 0) && Number(transferAmount) > 0 && (
+                    <tr className="border-t-2 border-slate-600 bg-slate-700/40 text-xs font-semibold">
+                      <td className="px-3 py-3 text-slate-400" colSpan={7}>สรุปรวมสุทธิ</td>
+                      <td className="px-3 py-3 text-center">
+                        <span className={`font-mono ${
+                          sumSummary + (sumBet - Number(transferAmount)) > 0 ? 'text-emerald-400' :
+                          sumSummary + (sumBet - Number(transferAmount)) === 0 ? 'text-red-400' :
+                          'text-red-400'
+                        }`}>
+                          {r2(sumSummary + (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td colSpan={3}></td>
+                    </tr>
+                  )}
                 </tfoot>
               </table>
             </div>
