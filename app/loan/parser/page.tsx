@@ -1429,11 +1429,11 @@ export default function ParserPage() {
                       <td className="px-3 py-3 text-slate-400" colSpan={7}>สรุปรวมสุทธิ</td>
                       <td className="px-3 py-3 text-center">
                         <span className={`font-mono ${
-                          sumSummary + (sumBet - Number(transferAmount)) > 0 ? 'text-emerald-400' :
-                          sumSummary + (sumBet - Number(transferAmount)) === 0 ? 'text-red-400' :
+                          sumSummary - (sumBet - Number(transferAmount)) > 0 ? 'text-emerald-400' :
+                          sumSummary - (sumBet - Number(transferAmount)) === 0 ? 'text-red-400' :
                           'text-red-400'
                         }`}>
-                          {r2(sumSummary + (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 })}
+                          {r2(sumSummary - (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 })}
                         </span>
                       </td>
                       <td colSpan={3}></td>
@@ -1468,8 +1468,8 @@ export default function ParserPage() {
                   {Number(transferAmount) > 0 && (
                     <div className="text-center">
                       <p className="text-slate-400 mb-1">สรุปรวมสุทธิ</p>
-                      <p className={`font-bold font-mono ${sumSummary + (sumBet - Number(transferAmount)) > 0 ? 'text-emerald-400' : sumSummary + (sumBet - Number(transferAmount)) === 0 ? 'text-red-400' : 'text-red-400'}`}>
-                        {r2(sumSummary + (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 })}
+                      <p className={`font-bold font-mono ${sumSummary - (sumBet - Number(transferAmount)) > 0 ? 'text-emerald-400' : sumSummary - (sumBet - Number(transferAmount)) === 0 ? 'text-red-400' : 'text-red-400'}`}>
+                        {r2(sumSummary - (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 })}
                       </p>
                     </div>
                   )}
@@ -1479,7 +1479,7 @@ export default function ParserPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  const summaryText = `รวมเงินที่แทง\t${sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 })}\nเงินที่โอนเข้ามา\t${Number(transferAmount) > 0 ? Number(transferAmount).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nผลสรุปรวม\t${rows.some(r => r.result || (r.children ?? []).length > 0) ? sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nสรุปรวมสุทธิ\t${rows.some(r => r.result || (r.children ?? []).length > 0) && Number(transferAmount) > 0 ? r2(sumSummary + (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}`;
+                  const summaryText = `รวมเงินที่แทง\t${sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 })}\nเงินที่โอนเข้ามา\t${Number(transferAmount) > 0 ? Number(transferAmount).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nผลสรุปรวม\t${rows.some(r => r.result || (r.children ?? []).length > 0) ? sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nสรุปรวมสุทธิ\t${rows.some(r => r.result || (r.children ?? []).length > 0) && Number(transferAmount) > 0 ? r2(sumSummary - (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}`;
                   copyText(summaryText);
                   setCopied('summary');
                   setTimeout(() => setCopied(null), 1500);
