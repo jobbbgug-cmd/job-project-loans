@@ -1193,15 +1193,19 @@ export default function ParserPage() {
                                   color-scheme: light !important;
                                   filter: none !important;
                                 }
-                                @supports (color: lab(50 0 0)) {
-                                  * {
-                                    --tw-*: initial;
-                                  }
-                                }
                               `;
                               clonedDocument.head.appendChild(style);
-                              clonedDocument.querySelectorAll('[style*="lab"]').forEach((el) => {
-                                (el as HTMLElement).style.cssText = (el as HTMLElement).style.cssText.replace(/lab\([^)]*\)/g, '#1e293b');
+                              clonedDocument.querySelectorAll('*').forEach((el) => {
+                                const element = el as HTMLElement;
+                                const cssText = element.style.cssText;
+                                if (cssText.includes('lab(') || cssText.includes('oklab(') || cssText.includes('lch(')) {
+                                  const cleaned = cssText
+                                    .replace(/lab\([^)]*\)/g, '#1e293b')
+                                    .replace(/oklab\([^)]*\)/g, '#1e293b')
+                                    .replace(/lch\([^)]*\)/g, '#1e293b')
+                                    .replace(/oklch\([^)]*\)/g, '#1e293b');
+                                  element.style.cssText = cleaned;
+                                }
                               });
                             }
                           });
