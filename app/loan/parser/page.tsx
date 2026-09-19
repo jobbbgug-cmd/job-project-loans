@@ -1164,11 +1164,19 @@ export default function ParserPage() {
                   <input type="number" min={0} value={transferAmount} onChange={e => setTransferAmount(e.target.value)}
                     placeholder="0" className="w-32 bg-slate-600 border border-slate-500 rounded-lg px-3 py-1.5 text-sm text-white text-right font-mono focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
-                {rows.some(r => r.result) && (
+                {rows.some(r => r.result || (r.children ?? []).length > 0) && (
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400 text-sm font-medium">ผลสรุปรวม</span>
                     <span className={`font-mono font-bold text-lg ${sumSummary > 0 ? 'text-emerald-400' : sumSummary === 0 ? 'text-red-400' : 'text-slate-400'}`}>
                       {sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+                {rows.some(r => r.result || (r.children ?? []).length > 0) && Number(transferAmount) > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 text-sm font-medium">สรุปรวมสุทธิ</span>
+                    <span className={`font-mono font-bold text-lg ${sumSummary - (sumBet - Number(transferAmount)) > 0 ? 'text-emerald-400' : sumSummary - (sumBet - Number(transferAmount)) === 0 ? 'text-red-400' : 'text-red-400'}`}>
+                      {r2(sumSummary - (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 )}
