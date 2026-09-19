@@ -1445,6 +1445,57 @@ export default function ParserPage() {
           </div>
         )}
 
+        {/* Summary Footer */}
+        {rows.length > 0 && (
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div className="text-center">
+                <p className="text-slate-400 mb-1">รวมเงินที่แทง</p>
+                <p className="text-white font-bold font-mono">{sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 })}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-slate-400 mb-1">เงินที่โอนเข้ามา</p>
+                <p className="text-white font-bold font-mono">{Number(transferAmount) > 0 ? Number(transferAmount).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}</p>
+              </div>
+              {rows.some(r => r.result || (r.children ?? []).length > 0) && (
+                <>
+                  <div className="text-center">
+                    <p className="text-slate-400 mb-1">ผลสรุปรวม</p>
+                    <p className={`font-bold font-mono ${sumSummary > 0 ? 'text-emerald-400' : sumSummary === 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                      {sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  {Number(transferAmount) > 0 && (
+                    <div className="text-center">
+                      <p className="text-slate-400 mb-1">สรุปรวมสุทธิ</p>
+                      <p className={`font-bold font-mono ${sumSummary + (sumBet - Number(transferAmount)) > 0 ? 'text-emerald-400' : sumSummary + (sumBet - Number(transferAmount)) === 0 ? 'text-red-400' : 'text-red-400'}`}>
+                        {r2(sumSummary + (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const summaryText = `รวมเงินที่แทง\t${sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 })}\nเงินที่โอนเข้ามา\t${Number(transferAmount) > 0 ? Number(transferAmount).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nผลสรุปรวม\t${rows.some(r => r.result || (r.children ?? []).length > 0) ? sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nสรุปรวมสุทธิ\t${rows.some(r => r.result || (r.children ?? []).length > 0) && Number(transferAmount) > 0 ? r2(sumSummary + (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}`;
+                  copyText(summaryText);
+                  setCopied('summary');
+                  setTimeout(() => setCopied(null), 1500);
+                }}
+                className="flex items-center gap-1.5 text-xs font-medium text-sky-300 hover:text-sky-100 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 hover:border-sky-400/50 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap"
+              >
+                {copied === 'summary' ? (
+                  <><svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-emerald-400">คัดลอกแล้ว</span></>
+                ) : (
+                  <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>คัดลอก</>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Archive button */}
         {rows.length > 0 && (
           <div className={`border rounded-2xl p-5 space-y-3 ${archiveReady ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-slate-700 bg-slate-800/50'}`}>
