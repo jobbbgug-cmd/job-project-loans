@@ -152,7 +152,7 @@ function LoanLayoutInner({ children }: { children: React.ReactNode }) {
           </button>
           <div className="flex items-center gap-2 lg:hidden">
             <div className="flex-shrink-0 overflow-hidden" style={{ width: 36, height: 36 }}>
-              <Image src="/logo.png" alt="logo" width={36} height={36} className="object-cover w-full h-full"
+              <Image src="/apple-touch-icon.png" alt="logo" width={36} height={36} className="object-cover w-full h-full"
                 style={{ transform: 'scale(1.4)', transformOrigin: '50% 43%' }} />
             </div>
             <span className="text-white font-bold text-sm">Money</span>
