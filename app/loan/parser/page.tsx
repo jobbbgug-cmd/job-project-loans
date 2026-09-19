@@ -1184,6 +1184,13 @@ export default function ParserPage() {
                             backgroundColor: '#1e293b',
                             scale: 2,
                             logging: false,
+                            useCORS: true,
+                            allowTaint: true,
+                            onclone: (clonedDocument) => {
+                              const style = clonedDocument.createElement('style');
+                              style.textContent = `* { color-scheme: light !important; }`;
+                              clonedDocument.head.appendChild(style);
+                            }
                           });
                           const link = document.createElement('a');
                           link.href = canvas.toDataURL('image/png');
