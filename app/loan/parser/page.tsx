@@ -1177,44 +1177,58 @@ export default function ParserPage() {
                     </button>
                     <button
                       onClick={async () => {
-                        if (!mobileSummaryRef.current) return;
+                        if (!mobileSummaryRef.current) {
+                          console.warn('mobileSummaryRef is not ready');
+                          return;
+                        }
                         setSavingImage(true);
                         try {
+                          console.log('Starting screenshot capture...');
                           const canvas = await html2canvas(mobileSummaryRef.current, {
                             backgroundColor: '#1e293b',
                             scale: 2,
                             logging: false,
                             useCORS: true,
                             allowTaint: true,
+                            removeContainer: true,
                             onclone: (clonedDocument) => {
-                              const style = clonedDocument.createElement('style');
-                              style.textContent = `
-                                * {
-                                  color-scheme: light !important;
-                                  filter: none !important;
-                                }
-                              `;
-                              clonedDocument.head.appendChild(style);
-                              clonedDocument.querySelectorAll('*').forEach((el) => {
-                                const element = el as HTMLElement;
-                                const cssText = element.style.cssText;
-                                if (cssText.includes('lab(') || cssText.includes('oklab(') || cssText.includes('lch(')) {
-                                  const cleaned = cssText
-                                    .replace(/lab\([^)]*\)/g, '#1e293b')
-                                    .replace(/oklab\([^)]*\)/g, '#1e293b')
-                                    .replace(/lch\([^)]*\)/g, '#1e293b')
-                                    .replace(/oklch\([^)]*\)/g, '#1e293b');
-                                  element.style.cssText = cleaned;
-                                }
-                              });
+                              try {
+                                const style = clonedDocument.createElement('style');
+                                style.textContent = `
+                                  * {
+                                    color-scheme: light !important;
+                                    filter: none !important;
+                                  }
+                                `;
+                                clonedDocument.head.appendChild(style);
+                                clonedDocument.querySelectorAll('*').forEach((el) => {
+                                  const element = el as HTMLElement;
+                                  const cssText = element.style.cssText;
+                                  if (cssText && (cssText.includes('lab(') || cssText.includes('oklab(') || cssText.includes('lch(') || cssText.includes('oklch('))) {
+                                    const cleaned = cssText
+                                      .replace(/lab\([^)]*\)/g, '#1e293b')
+                                      .replace(/oklab\([^)]*\)/g, '#1e293b')
+                                      .replace(/lch\([^)]*\)/g, '#1e293b')
+                                      .replace(/oklch\([^)]*\)/g, '#1e293b');
+                                    element.style.cssText = cleaned;
+                                  }
+                                });
+                              } catch (e) {
+                                console.error('Error in onclone:', e);
+                              }
                             }
                           });
+                          console.log('Canvas generated, creating download...');
                           const link = document.createElement('a');
                           link.href = canvas.toDataURL('image/png');
                           link.download = `parser-${new Date().toISOString().split('T')[0]}.png`;
+                          document.body.appendChild(link);
                           link.click();
+                          document.body.removeChild(link);
+                          console.log('Screenshot saved successfully');
                         } catch (err) {
                           console.error('Failed to save image:', err);
+                          alert('ไม่สามารถบันทึกรูปได้: ' + (err instanceof Error ? err.message : String(err)));
                         } finally {
                           setSavingImage(false);
                         }
