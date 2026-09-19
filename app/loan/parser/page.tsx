@@ -1138,22 +1138,6 @@ export default function ParserPage() {
                             </select>
                             {isLinked && <span className="text-[8px] text-blue-400 font-bold shrink-0">🔗</span>}
                             {isLinked ? (
-                              <>
-                                <span className="text-xs text-yellow-300 font-mono font-semibold w-10 text-center">{displayData.handicap}</span>
-                                <span className="text-xs text-sky-300 font-mono font-semibold w-10 text-center">{displayData.odds}</span>
-                                <span className="text-xs text-emerald-200 font-mono font-semibold w-12 text-center">{displayData.score}</span>
-                              </>
-                            ) : (
-                              <>
-                                <input value={sub.handicap} onChange={e => updateSubRow(i, j, 'handicap', e.target.value)}
-                                  placeholder="ต่อ" className="w-10 bg-transparent text-xs text-yellow-300 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
-                                <input value={sub.odds} onChange={e => updateSubRow(i, j, 'odds', e.target.value)}
-                                  placeholder="น้ำ" className="w-10 bg-transparent text-xs text-sky-300 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
-                                <input value={sub.score} onChange={e => updateSubRow(i, j, 'score', e.target.value)}
-                                  placeholder="สกอร์" className="w-12 bg-transparent text-xs text-emerald-200 placeholder-slate-500 focus:outline-none text-center font-mono font-semibold" />
-                              </>
-                            )}
-                            {isLinked ? (
                               <span className={`rounded px-1 py-0.5 text-[10px] font-semibold shrink-0 inline-block ${RESULT_STYLES[displayData.result] ?? RESULT_STYLES['']}`}>
                                 {RESULT_OPTIONS.find(o => o.value === displayData.result)?.label || '—'}
                               </span>
