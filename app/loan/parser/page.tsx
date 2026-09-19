@@ -1156,9 +1156,8 @@ export default function ParserPage() {
               {/* Mobile totals */}
               <div className="border-t-2 border-slate-600 bg-slate-700/30 px-4 py-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400 text-sm font-medium">รวมเงินที่แทง</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-white font-semibold">{sumBet > 0 ? sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}</span>
+                    <span className="text-slate-400 text-sm font-medium">รวมเงินที่แทง</span>
                     <button
                       onClick={() => {
                         const summaryText = `รวมเงินที่แทง\t${sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 })}\nเงินที่โอนเข้ามา\t${Number(transferAmount) > 0 ? Number(transferAmount).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nผลสรุปรวม\t${rows.some(r => r.result || (r.children ?? []).length > 0) ? sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nสรุปรวมสุทธิ\t${rows.some(r => r.result || (r.children ?? []).length > 0) && Number(transferAmount) > 0 ? r2(sumSummary - (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}`;
@@ -1175,6 +1174,7 @@ export default function ParserPage() {
                       )}
                     </button>
                   </div>
+                  <span className="font-mono text-white font-semibold">{sumBet > 0 ? sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-slate-400 text-sm font-medium shrink-0">เงินที่โอนเข้ามา</span>
