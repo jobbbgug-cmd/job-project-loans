@@ -42,9 +42,9 @@ function LoginForm() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
-          <div className="w-[300px] max-w-[80vw] overflow-hidden mb-2 mx-auto">
-            <Image src="/logo.png" alt="My Money Master" width={300} height={300} className="object-cover w-full h-full"
-              style={{ transform: 'scale(1.4)', transformOrigin: '50% 43%' }} />
+          <div className="w-[300px] max-w-[80vw] overflow-hidden mb-2 mx-auto rounded-lg">
+            <Image src="/apple-touch-icon.png" alt="My Money Master" width={300} height={300} className="object-cover w-full h-full"
+              style={{ transform: 'scale(1)', transformOrigin: '50% 50%' }} />
           </div>
           <p className="text-slate-400 text-sm">My Money Master</p>
         </div>

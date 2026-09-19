@@ -38,9 +38,9 @@ function RegisterForm() {
 
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-[200px] max-w-[60vw] overflow-hidden mb-2 mx-auto">
-            <Image src="/logo.png" alt="My Money Master" width={200} height={200} className="object-cover w-full h-full"
-              style={{ transform: 'scale(1.4)', transformOrigin: '50% 43%' }} />
+          <div className="w-[200px] max-w-[60vw] overflow-hidden mb-2 mx-auto rounded-lg">
+            <Image src="/apple-touch-icon.png" alt="My Money Master" width={200} height={200} className="object-cover w-full h-full"
+              style={{ transform: 'scale(1)', transformOrigin: '50% 50%' }} />
           </div>
           <p className="text-slate-400 text-sm">My Money Master</p>
         </div>

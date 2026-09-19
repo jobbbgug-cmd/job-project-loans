@@ -99,8 +99,8 @@ function LoanLayoutInner({ children }: { children: React.ReactNode }) {
       `}>
         <div className={`flex items-center gap-3 border-b border-slate-700 ${sidebarOpen ? 'p-3' : 'p-2 justify-center'}`}>
           <div className="flex-shrink-0 overflow-hidden" style={{ width: 40, height: 40 }}>
-            <Image src="/logo.png" alt="My Money Master" width={40} height={40} className="object-cover w-full h-full"
-              style={{ transform: 'scale(1.4)', transformOrigin: '50% 43%' }} />
+            <Image src="/apple-touch-icon.png" alt="My Money Master" width={40} height={40} className="object-cover w-full h-full rounded"
+              style={{ transform: 'scale(1)', transformOrigin: '50% 50%' }} />
           </div>
           {sidebarOpen && (
             <div className="leading-tight min-w-0">
