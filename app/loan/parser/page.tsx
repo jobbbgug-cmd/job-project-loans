@@ -662,6 +662,80 @@ export default function ParserPage() {
     if (rows.length === 0) return;
     setSavingImage(true);
     try {
+      const isDesktop = window.innerWidth >= 768;
+      const targetRef = isDesktop ? desktopTableRef : mobileDataContainerRef;
+
+      if (!targetRef.current) {
+        console.warn(`${isDesktop ? 'desktopTableRef' : 'mobileDataContainerRef'} is not ready`);
+        setSavingImage(false);
+        return;
+      }
+
+      console.log(`Saving image (${isDesktop ? 'desktop' : 'mobile'})...`);
+
+      const canvas = await html2canvas(targetRef.current, {
+        backgroundColor: '#1e293b',
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        removeContainer: true,
+        onclone: (clonedDocument) => {
+          try {
+            // Remove HEAD completely to avoid CSS parsing issues
+            const head = clonedDocument.querySelector('head');
+            if (head) {
+              head.innerHTML = '';
+            }
+
+            // Add minimal inline styles to cloned elements
+            clonedDocument.querySelectorAll('*').forEach((el) => {
+              const element = el as HTMLElement;
+              const cssText = element.style.cssText || '';
+              if (cssText) {
+                const cleaned = cssText
+                  .replace(/lab\([^)]*\)/g, '#94a3b8')
+                  .replace(/oklab\([^)]*\)/g, '#94a3b8')
+                  .replace(/lch\([^)]*\)/g, '#94a3b8')
+                  .replace(/oklch\([^)]*\)/g, '#94a3b8');
+                element.style.cssText = cleaned;
+              }
+              // Force basic styling
+              if (element.classList.contains('text-white')) element.style.color = '#ffffff';
+              if (element.classList.contains('text-slate-400')) element.style.color = '#94a3b8';
+              if (element.classList.contains('text-emerald-400')) element.style.color = '#34d399';
+              if (element.classList.contains('text-red-400')) element.style.color = '#f87171';
+              if (element.classList.contains('text-sky-300')) element.style.color = '#0ea5e9';
+              if (element.classList.contains('text-amber-300')) element.style.color = '#fcd34d';
+              if (element.classList.contains('bg-slate-700')) element.style.backgroundColor = '#334155';
+              if (element.classList.contains('border-t-2')) element.style.borderTopColor = '#475569';
+            });
+          } catch (e) {
+            console.error('Error in onclone:', e);
+          }
+        }
+      });
+
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `parser-${new Date().toISOString().split('T')[0]}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      console.log('Screenshot saved successfully');
+      return;
+    } catch (err) {
+      console.error('Failed to save image:', err);
+      alert('ไม่สามารถบันทึกรูปได้: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setSavingImage(false);
+    }
+  }
+
+  async function saveAsImageCanvas() {
+    if (rows.length === 0) return;
+    setSavingImage(true);
+    try {
       const scale  = 2;
       const pad    = 10;
       const rowH   = 38;
@@ -1191,75 +1265,7 @@ export default function ParserPage() {
                       )}
                     </button>
                     <button
-                      onClick={async () => {
-                        const isDesktop = window.innerWidth >= 768;
-                        const targetRef = isDesktop ? desktopTableRef : mobileDataContainerRef;
-
-                        if (!targetRef.current) {
-                          console.warn(`${isDesktop ? 'desktopTableRef' : 'mobileDataContainerRef'} is not ready`);
-                          return;
-                        }
-                        setSavingImage(true);
-                        try {
-                          console.log(`Starting screenshot capture (${isDesktop ? 'desktop' : 'mobile'})...`);
-                          const canvas = await html2canvas(targetRef.current, {
-                            backgroundColor: '#1e293b',
-                            scale: 2,
-                            logging: false,
-                            useCORS: true,
-                            allowTaint: true,
-                            removeContainer: true,
-                            onclone: (clonedDocument) => {
-                              try {
-                                // Remove HEAD completely to avoid CSS parsing issues
-                                const head = clonedDocument.querySelector('head');
-                                if (head) {
-                                  head.innerHTML = '';
-                                }
-
-                                // Add minimal inline styles to cloned elements
-                                clonedDocument.querySelectorAll('*').forEach((el) => {
-                                  const element = el as HTMLElement;
-                                  // Preserve only basic styling, remove problematic colors
-                                  const cssText = element.style.cssText || '';
-                                  if (cssText) {
-                                    const cleaned = cssText
-                                      .replace(/lab\([^)]*\)/g, '#94a3b8')
-                                      .replace(/oklab\([^)]*\)/g, '#94a3b8')
-                                      .replace(/lch\([^)]*\)/g, '#94a3b8')
-                                      .replace(/oklch\([^)]*\)/g, '#94a3b8');
-                                    element.style.cssText = cleaned;
-                                  }
-                                  // Force basic styling
-                                  if (element.classList.contains('text-white')) element.style.color = '#ffffff';
-                                  if (element.classList.contains('text-slate-400')) element.style.color = '#94a3b8';
-                                  if (element.classList.contains('text-emerald-400')) element.style.color = '#34d399';
-                                  if (element.classList.contains('text-red-400')) element.style.color = '#f87171';
-                                  if (element.classList.contains('text-sky-300')) element.style.color = '#0ea5e9';
-                                  if (element.classList.contains('text-amber-300')) element.style.color = '#fcd34d';
-                                  if (element.classList.contains('bg-slate-700')) element.style.backgroundColor = '#334155';
-                                  if (element.classList.contains('border-t-2')) element.style.borderTopColor = '#475569';
-                                });
-                              } catch (e) {
-                                console.error('Error in onclone:', e);
-                              }
-                            }
-                          });
-                          console.log('Canvas generated, creating download...');
-                          const link = document.createElement('a');
-                          link.href = canvas.toDataURL('image/png');
-                          link.download = `parser-${new Date().toISOString().split('T')[0]}.png`;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                          console.log('Screenshot saved successfully');
-                        } catch (err) {
-                          console.error('Failed to save image:', err);
-                          alert('ไม่สามารถบันทึกรูปได้: ' + (err instanceof Error ? err.message : String(err)));
-                        } finally {
-                          setSavingImage(false);
-                        }
-                      }}
+                      onClick={saveAsImage}
                       disabled={savingImage}
                       className="flex items-center gap-1 text-[10px] font-medium text-amber-300 hover:text-amber-100 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded transition-all disabled:opacity-40">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
