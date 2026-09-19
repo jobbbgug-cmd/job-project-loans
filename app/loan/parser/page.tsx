@@ -1188,8 +1188,21 @@ export default function ParserPage() {
                             allowTaint: true,
                             onclone: (clonedDocument) => {
                               const style = clonedDocument.createElement('style');
-                              style.textContent = `* { color-scheme: light !important; }`;
+                              style.textContent = `
+                                * {
+                                  color-scheme: light !important;
+                                  filter: none !important;
+                                }
+                                @supports (color: lab(50 0 0)) {
+                                  * {
+                                    --tw-*: initial;
+                                  }
+                                }
+                              `;
                               clonedDocument.head.appendChild(style);
+                              clonedDocument.querySelectorAll('[style*="lab"]').forEach((el) => {
+                                (el as HTMLElement).style.cssText = (el as HTMLElement).style.cssText.replace(/lab\([^)]*\)/g, '#1e293b');
+                              });
                             }
                           });
                           const link = document.createElement('a');
