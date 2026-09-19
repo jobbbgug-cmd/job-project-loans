@@ -239,6 +239,7 @@ export default function ParserPage() {
   const [originalRows, setOriginalRows] = useState<Row[]>([]);
 
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mobileDataContainerRef = useRef<HTMLDivElement>(null);
   const mobileSummaryRef = useRef<HTMLDivElement>(null);
   async function loadDraftFromServer() {
     try {
@@ -1035,7 +1036,7 @@ export default function ParserPage() {
               </div>
             </div>
             {/* ── Mobile cards ─────────────────────────────────────────── */}
-            <div className="md:hidden divide-y divide-slate-700/50">
+            <div ref={mobileDataContainerRef} className="md:hidden divide-y divide-slate-700/50">
               {rows.map((row, i) => {
                 const sv = calcSummary(row, rows);
                 return (
@@ -1177,14 +1178,14 @@ export default function ParserPage() {
                     </button>
                     <button
                       onClick={async () => {
-                        if (!mobileSummaryRef.current) {
-                          console.warn('mobileSummaryRef is not ready');
+                        if (!mobileDataContainerRef.current) {
+                          console.warn('mobileDataContainerRef is not ready');
                           return;
                         }
                         setSavingImage(true);
                         try {
                           console.log('Starting screenshot capture...');
-                          const canvas = await html2canvas(mobileSummaryRef.current, {
+                          const canvas = await html2canvas(mobileDataContainerRef.current, {
                             backgroundColor: '#1e293b',
                             scale: 2,
                             logging: false,
