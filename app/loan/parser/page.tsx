@@ -1192,7 +1192,7 @@ export default function ParserPage() {
                 {rows.some(r => r.result || (r.children ?? []).length > 0) && (
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400 text-sm font-medium">สรุปรวมสุทธิ</span>
-                    <span className={`font-mono font-bold text-lg ${sumSummary - (sumBet - Number(transferAmount)) > 0 ? 'text-emerald-400' : sumSummary - (sumBet - Number(transferAmount)) === 0 ? 'text-red-400' : 'text-red-400'}`}>
+                    <span className={`font-mono font-bold text-lg ${sumSummary > sumBet ? 'text-red-400' : 'text-emerald-400'}`}>
                       {r2(sumSummary - (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -1453,11 +1453,7 @@ export default function ParserPage() {
                     <tr className="border-t-2 border-slate-600 bg-slate-700/40 text-xs font-semibold">
                       <td className="px-3 py-3 text-slate-400" colSpan={7}>สรุปรวมสุทธิ</td>
                       <td className="px-3 py-3 text-center">
-                        <span className={`font-mono ${
-                          sumSummary - (sumBet - Number(transferAmount)) > 0 ? 'text-emerald-400' :
-                          sumSummary - (sumBet - Number(transferAmount)) === 0 ? 'text-red-400' :
-                          'text-red-400'
-                        }`}>
+                        <span className={`font-mono ${sumSummary > sumBet ? 'text-red-400' : 'text-emerald-400'}`}>
                           {r2(sumSummary - (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 })}
                         </span>
                       </td>
