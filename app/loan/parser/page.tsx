@@ -239,6 +239,7 @@ export default function ParserPage() {
   const [originalRows, setOriginalRows] = useState<Row[]>([]);
 
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const desktopTableRef = useRef<HTMLDivElement>(null);
   const mobileDataContainerRef = useRef<HTMLDivElement>(null);
   const mobileSummaryRef = useRef<HTMLDivElement>(null);
   async function loadDraftFromServer() {
@@ -977,7 +978,7 @@ export default function ParserPage() {
 
         {/* Table */}
         {rows.length > 0 && (
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+          <div ref={desktopTableRef} className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
             <div className="px-5 py-3 border-b border-slate-700 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
               <div className="flex items-center gap-2.5">
                 <h2 className="text-white font-semibold text-sm">ตารางข้อมูล</h2>
@@ -1191,14 +1192,17 @@ export default function ParserPage() {
                     </button>
                     <button
                       onClick={async () => {
-                        if (!mobileDataContainerRef.current) {
-                          console.warn('mobileDataContainerRef is not ready');
+                        const isDesktop = window.innerWidth >= 768;
+                        const targetRef = isDesktop ? desktopTableRef : mobileDataContainerRef;
+
+                        if (!targetRef.current) {
+                          console.warn(`${isDesktop ? 'desktopTableRef' : 'mobileDataContainerRef'} is not ready`);
                           return;
                         }
                         setSavingImage(true);
                         try {
-                          console.log('Starting screenshot capture...');
-                          const canvas = await html2canvas(mobileDataContainerRef.current, {
+                          console.log(`Starting screenshot capture (${isDesktop ? 'desktop' : 'mobile'})...`);
+                          const canvas = await html2canvas(targetRef.current, {
                             backgroundColor: '#1e293b',
                             scale: 2,
                             logging: false,
