@@ -1157,7 +1157,24 @@ export default function ParserPage() {
               <div className="border-t-2 border-slate-600 bg-slate-700/30 px-4 py-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400 text-sm font-medium">รวมเงินที่แทง</span>
-                  <span className="font-mono text-white font-semibold">{sumBet > 0 ? sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-white font-semibold">{sumBet > 0 ? sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}</span>
+                    <button
+                      onClick={() => {
+                        const summaryText = `รวมเงินที่แทง\t${sumBet.toLocaleString('th-TH', { maximumFractionDigits: 2 })}\nเงินที่โอนเข้ามา\t${Number(transferAmount) > 0 ? Number(transferAmount).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nผลสรุปรวม\t${rows.some(r => r.result || (r.children ?? []).length > 0) ? sumSummary.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}\nสรุปรวมสุทธิ\t${rows.some(r => r.result || (r.children ?? []).length > 0) && Number(transferAmount) > 0 ? r2(sumSummary - (sumBet - Number(transferAmount))).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}`;
+                        copyText(summaryText);
+                        setCopied('summary');
+                        setTimeout(() => setCopied(null), 1500);
+                      }}
+                      className="flex items-center gap-1 text-[10px] font-medium text-sky-300 hover:text-sky-100 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 px-1.5 py-0.5 rounded transition-all whitespace-nowrap"
+                    >
+                      {copied === 'summary' ? (
+                        <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      ) : (
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-slate-400 text-sm font-medium shrink-0">เงินที่โอนเข้ามา</span>
