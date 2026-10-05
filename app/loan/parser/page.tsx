@@ -658,7 +658,88 @@ export default function ParserPage() {
   }
 
   async function saveAsImage() {
-    return saveAsImageCanvas();
+    const isMobile = window.innerWidth < 768;
+    return isMobile ? saveAsImageMobile() : saveAsImageCanvas();
+  }
+
+  async function saveAsImageMobile() {
+    if (rows.length === 0) return;
+    setSavingImage(true);
+    try {
+      const scale = 1.5;
+      const pad = 8;
+      const cardH = 120;
+      const headH = 35;
+      const footH = 35;
+      const font = 'system-ui,-apple-system,sans-serif';
+      const cardW = 280;
+
+      const totalW = cardW + pad * 2;
+      const totalH = headH + cardH * rows.length + footH;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = totalW * scale;
+      canvas.height = totalH * scale;
+      const ctx = canvas.getContext('2d')!;
+      ctx.scale(scale, scale);
+
+      const fill = (x: number, y: number, w: number, h: number, color: string) => { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); };
+      const hline = (y: number, color: string, lw = 0.5) => { ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(totalW - pad, y); ctx.stroke(); };
+      const txt = (s: string, x: number, y: number, color: string, size = 11, bold = false) => {
+        ctx.fillStyle = color; ctx.font = `${bold ? '600 ' : ''}${size}px ${font}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText(s, x, y);
+      };
+
+      fill(0, 0, totalW, totalH, '#1e293b');
+
+      // Header
+      fill(0, 0, totalW, headH, '#0f172a');
+      txt('Mobile Report', pad + 8, 8, '#cbd5e1', 13, true);
+      hline(headH, '#334155', 1);
+
+      // Cards
+      const RLABEL: Record<string, string> = { win_full:'ชนะเต็ม', win_half:'ชนะครึ่ง', lose_full:'แพ้เต็ม', lose_half:'แพ้ครึ่ง', draw:'เสมอทุน', '':'—' };
+      rows.forEach((row, i) => {
+        const y = headH + i * cardH;
+        fill(pad, y + 2, cardW, cardH - 4, i % 2 === 0 ? '#1e293b' : '#1b2a3b');
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 0.5; ctx.strokeRect(pad, y + 2, cardW, cardH - 4);
+
+        const sv = calcSummary(row, rows);
+        const lines = [
+          `${i + 1}. ${row.name}`,
+          `วันที่: ${row.date ? fmtDate(row.date) : '—'}`,
+          `ราคาต่อ: ${row.handicap || '—'} | ราคาน้ำ: ${row.odds || '—'}`,
+          `สกอร์: ${row.score || '—'} → ${row.scoreFinal || '—'}`,
+          `แทง: ${row.betAmount ? Number(row.betAmount).toLocaleString('th-TH') : '—'} | ${RLABEL[row.result] ?? '—'}`,
+          `ผลสรุป: ${sv !== null ? sv.toLocaleString('th-TH', {maximumFractionDigits:2}) : '—'}`
+        ];
+
+        let py = y + 6;
+        lines.forEach((line, li) => {
+          const color = li === 0 ? '#f1f5f9' : li === lines.length - 1 ? (sv !== null ? (sv > 0 ? '#10b981' : '#ef4444') : '#475569') : '#cbd5e1';
+          txt(line, pad + 6, py, color, li === 0 ? 10 : 9, li === 0);
+          py += 11;
+        });
+      });
+
+      // Footer
+      fill(0, headH + cardH * rows.length, totalW, footH, '#0f172a');
+      txt(`Generated: ${new Date().toLocaleString('th-TH')}`, pad + 8, headH + cardH * rows.length + 8, '#94a3b8', 9);
+      hline(headH + cardH * rows.length, '#334155', 1);
+
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `parser-mobile-${new Date().toISOString().split('T')[0]}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      console.log('Mobile screenshot saved successfully');
+    } catch (err) {
+      console.error('Failed to save mobile image:', err);
+      alert('ไม่สามารถบันทึกรูปได้: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setSavingImage(false);
+    }
   }
 
   async function saveAsImageCanvas() {
