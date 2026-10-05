@@ -1,7 +1,6 @@
 'use client';
 
 import { Fragment, useState, useEffect, useRef } from 'react';
-import html2canvas from 'html2canvas';
 
 interface SubRow {
   name: string;
@@ -659,77 +658,7 @@ export default function ParserPage() {
   }
 
   async function saveAsImage() {
-    if (rows.length === 0) return;
-    setSavingImage(true);
-    try {
-      const isDesktop = window.innerWidth >= 768;
-      const targetRef = isDesktop ? desktopTableRef : mobileDataContainerRef;
-
-      if (!targetRef.current) {
-        console.warn(`${isDesktop ? 'desktopTableRef' : 'mobileDataContainerRef'} is not ready`);
-        setSavingImage(false);
-        return;
-      }
-
-      console.log(`Saving image (${isDesktop ? 'desktop' : 'mobile'})...`);
-
-      const canvas = await html2canvas(targetRef.current, {
-        backgroundColor: '#1e293b',
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        removeContainer: true,
-        onclone: (clonedDocument) => {
-          try {
-            // Remove HEAD completely to avoid CSS parsing issues
-            const head = clonedDocument.querySelector('head');
-            if (head) {
-              head.innerHTML = '';
-            }
-
-            // Add minimal inline styles to cloned elements
-            clonedDocument.querySelectorAll('*').forEach((el) => {
-              const element = el as HTMLElement;
-              const cssText = element.style.cssText || '';
-              if (cssText) {
-                const cleaned = cssText
-                  .replace(/lab\([^)]*\)/g, '#94a3b8')
-                  .replace(/oklab\([^)]*\)/g, '#94a3b8')
-                  .replace(/lch\([^)]*\)/g, '#94a3b8')
-                  .replace(/oklch\([^)]*\)/g, '#94a3b8');
-                element.style.cssText = cleaned;
-              }
-              // Force basic styling
-              if (element.classList.contains('text-white')) element.style.color = '#ffffff';
-              if (element.classList.contains('text-slate-400')) element.style.color = '#94a3b8';
-              if (element.classList.contains('text-emerald-400')) element.style.color = '#34d399';
-              if (element.classList.contains('text-red-400')) element.style.color = '#f87171';
-              if (element.classList.contains('text-sky-300')) element.style.color = '#0ea5e9';
-              if (element.classList.contains('text-amber-300')) element.style.color = '#fcd34d';
-              if (element.classList.contains('bg-slate-700')) element.style.backgroundColor = '#334155';
-              if (element.classList.contains('border-t-2')) element.style.borderTopColor = '#475569';
-            });
-          } catch (e) {
-            console.error('Error in onclone:', e);
-          }
-        }
-      });
-
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = `parser-${new Date().toISOString().split('T')[0]}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      console.log('Screenshot saved successfully');
-      return;
-    } catch (err) {
-      console.error('Failed to save image:', err);
-      alert('ไม่สามารถบันทึกรูปได้: ' + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setSavingImage(false);
-    }
+    return saveAsImageCanvas();
   }
 
   async function saveAsImageCanvas() {
