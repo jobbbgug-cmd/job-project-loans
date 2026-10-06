@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
-  const type = searchParams.get('type'); // 'raw' or 'amount'
+  const type = searchParams.get('type'); // 'raw' or 'amount' or 'all' or null
 
   const db = await getDb();
   let query: Record<string, any> = {};
@@ -17,10 +17,12 @@ export async function GET(request: NextRequest) {
     query.display_name = { $in: ['JJOB', 'my'] }; // ข้อมูลดิบจาก JJOB และ my
   } else if (type === 'amount') {
     query.display_name = 'khanchit'; // จำนวนเงินจาก khanchit
+  } else if (type === 'all' || !type) {
+    // Get all messages (no filter)
   }
 
   const rows = await db.collection('line_messages')
-    .find(query, { projection: { _id: 0, id: 1, display_name: 1, message: 1, received_at: 1, used: 1 } })
+    .find(query, { projection: { _id: 0, id: 1, line_user_id: 1, display_name: 1, message: 1, received_at: 1, used: 1 } })
     .sort({ received_at: -1 })
     .toArray();
   return NextResponse.json(rows);
