@@ -272,23 +272,47 @@ export default function ChatPage() {
                         ? 'bg-yellow-500 text-slate-900'
                         : 'bg-slate-700 text-white'
                     }`}>
-                      {hasImage && (
-                        <img src={msg.image_url} alt="chat image" className="w-full max-h-96 object-cover" />
+                      {hasImage ? (
+                        <>
+                          {msg.image_url ? (
+                            <img
+                              src={msg.image_url}
+                              alt="chat image"
+                              className="w-full max-h-96 object-cover"
+                              onError={() => console.error('Image load failed:', msg.image_url?.substring(0, 100))}
+                              onLoad={() => console.log('✓ Image loaded:', msg.image_url?.substring(0, 100))}
+                            />
+                          ) : (
+                            <div className="px-4 py-2 bg-red-500/20">
+                              <p className="text-xs text-red-400">⚠️ No image URL</p>
+                            </div>
+                          )}
+                          <div className={`px-4 py-2 ${
+                            isOutgoing ? 'text-slate-800' : 'text-slate-400'
+                          }`}>
+                            <p className="text-xs">
+                              {new Date(msg.received_at).toLocaleString('th-TH')}
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {hasText && (
+                            <div className="px-4 py-2">
+                              <p className="text-sm break-words">{msg.message}</p>
+                            </div>
+                          )}
+                          <div className={`px-4 py-2 ${
+                            hasText ? 'pt-0' : ''
+                          } ${
+                            isOutgoing ? 'text-slate-800' : 'text-slate-400'
+                          }`}>
+                            <p className="text-xs">
+                              {new Date(msg.received_at).toLocaleString('th-TH')}
+                            </p>
+                          </div>
+                        </>
                       )}
-                      {hasText && (
-                        <div className="px-4 py-2">
-                          <p className="text-sm break-words">{msg.message}</p>
-                        </div>
-                      )}
-                      <div className={`px-4 py-2 ${
-                        hasText ? 'pt-0' : ''
-                      } ${
-                        isOutgoing ? 'text-slate-800' : 'text-slate-400'
-                      }`}>
-                        <p className="text-xs">
-                          {new Date(msg.received_at).toLocaleString('th-TH')}
-                        </p>
-                      </div>
                     </div>
                   </div>
                 );
