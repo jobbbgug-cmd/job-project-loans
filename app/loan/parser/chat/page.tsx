@@ -299,7 +299,7 @@ export default function ChatPage() {
                         <>
                           {hasText && (
                             <div className="px-4 py-2">
-                              <p className="text-sm break-words">{msg.message}</p>
+                              <p className="text-sm break-words whitespace-pre-wrap">{msg.message}</p>
                             </div>
                           )}
                           <div className={`px-4 py-2 ${
