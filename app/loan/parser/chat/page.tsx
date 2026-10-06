@@ -88,9 +88,50 @@ export default function ChatPage() {
       alert('ไฟล์ต้องไม่เกิน 5MB');
       return;
     }
-    setSelectedFile(file);
+
+    // Compress image
     const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target?.result as string);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize to max 800px
+        const canvas = document.createElement('canvas');
+        const maxWidth = 800;
+        const maxHeight = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to JPEG with quality 0.7
+        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+        setPreview(compressed);
+
+        // Create blob from canvas
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+            setSelectedFile(compressedFile);
+          }
+        }, 'image/jpeg', 0.7);
+      };
+      img.src = e.target?.result as string;
+    };
     reader.readAsDataURL(file);
   }
 
@@ -193,6 +234,9 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto space-y-3 p-4">
               {selectedThread.messages.map((msg, i) => {
                 const isOutgoing = msg.type === 'outgoing';
+                const hasImage = msg.image_url;
+                const hasText = msg.message && msg.message !== '[Image]';
+
                 return (
                   <div key={i} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-xs rounded-lg overflow-hidden ${
@@ -200,16 +244,16 @@ export default function ChatPage() {
                         ? 'bg-yellow-500 text-slate-900'
                         : 'bg-slate-700 text-white'
                     }`}>
-                      {msg.image_url && (
-                        <img src={msg.image_url} alt="chat image" className="w-full rounded-lg" />
+                      {hasImage && (
+                        <img src={msg.image_url} alt="chat image" className="w-full max-h-96 object-cover" />
                       )}
-                      {msg.message && (
+                      {hasText && (
                         <div className="px-4 py-2">
                           <p className="text-sm break-words">{msg.message}</p>
                         </div>
                       )}
                       <div className={`px-4 py-2 ${
-                        msg.message ? 'pt-0' : ''
+                        hasText ? 'pt-0' : ''
                       } ${
                         isOutgoing ? 'text-slate-800' : 'text-slate-400'
                       }`}>
