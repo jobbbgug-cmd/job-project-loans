@@ -727,12 +727,23 @@ export default function ParserPage() {
       txt(`Generated: ${new Date().toLocaleString('th-TH')}`, pad + 8, headH + cardH * rows.length + 8, '#94a3b8', 9);
       hline(headH + cardH * rows.length, '#334155', 1);
 
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = `parser-mobile-${new Date().toISOString().split('T')[0]}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const filename = `parser-mobile-${new Date().toISOString().slice(0, 10)}.png`;
+      if (typeof navigator.share === 'function') {
+        // iOS / mobile — use Web Share API so user can save to Photos
+        const blob = await new Promise<Blob>((resolve, reject) =>
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
+        );
+        const file = new File([blob], filename, { type: 'image/png' });
+        await navigator.share({ files: [file], title: filename });
+      } else {
+        // Desktop fallback
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
       console.log('Mobile screenshot saved successfully');
     } catch (err) {
       console.error('Failed to save mobile image:', err);
