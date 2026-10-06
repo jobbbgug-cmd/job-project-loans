@@ -66,13 +66,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Save outgoing message(s) to database
+    const savedMessages: any[] = [];
     try {
       const db = await getDb();
 
       // Save text message if provided
       if (message?.trim()) {
         const msgId = await nextId('line_messages');
-        await db.collection('line_messages').insertOne({
+        const textMsg = {
           id: msgId,
           line_user_id: userId,
           display_name: 'Bot',
@@ -80,13 +81,15 @@ export async function POST(request: NextRequest) {
           received_at: new Date().toISOString(),
           used: true,
           type: 'outgoing',
-        });
+        };
+        await db.collection('line_messages').insertOne(textMsg);
+        savedMessages.push(textMsg);
       }
 
       // Save image message if provided
       if (imageDataUrl) {
         const imgId = await nextId('line_messages');
-        await db.collection('line_messages').insertOne({
+        const imgMsg = {
           id: imgId,
           line_user_id: userId,
           display_name: 'Bot',
@@ -95,13 +98,15 @@ export async function POST(request: NextRequest) {
           received_at: new Date().toISOString(),
           used: true,
           type: 'outgoing',
-        });
+        };
+        await db.collection('line_messages').insertOne(imgMsg);
+        savedMessages.push(imgMsg);
       }
     } catch (dbErr) {
       console.error('Failed to save outgoing message:', dbErr);
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, messages: savedMessages });
   } catch (err) {
     console.error('Error sending LINE message:', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

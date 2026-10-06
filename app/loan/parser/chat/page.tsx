@@ -151,12 +151,28 @@ export default function ChatPage() {
       });
 
       if (res.ok) {
+        const data = await res.json();
         setReplyText('');
         setSelectedFile(null);
         setPreview(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
-        // Refresh messages
-        await fetchMessages();
+
+        // Update thread with new messages immediately
+        if (data.messages && Array.isArray(data.messages)) {
+          setThreads(prev => {
+            const updated = prev.map(thread => {
+              if (thread.userId === selectedUserId) {
+                return {
+                  ...thread,
+                  messages: [...thread.messages, ...data.messages],
+                  lastMessage: data.messages[data.messages.length - 1],
+                };
+              }
+              return thread;
+            });
+            return updated;
+          });
+        }
       } else {
         alert('ไม่สามารถส่งแชทได้');
       }
