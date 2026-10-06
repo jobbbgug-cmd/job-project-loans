@@ -32,15 +32,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle image upload
-    let imageUrl: string | null = null;
+    let imageDataUrl: string | null = null;
     if (file) {
       const buffer = Buffer.from(await file.arrayBuffer());
-      // Convert to base64 data URL for storage/LINE
-      imageUrl = `data:${file.type};base64,${buffer.toString('base64')}`;
+      // Store as base64 data URL for display
+      imageDataUrl = `data:${file.type};base64,${buffer.toString('base64')}`;
+
+      // For LINE API, send as text for now (LINE requires external URL for images)
+      // Store the data URL locally and it will be displayed in the chat
       messages.push({
-        type: 'image',
-        originalContentUrl: imageUrl,
-        previewImageUrl: imageUrl,
+        type: 'text',
+        text: '[📸 รูปภาพ]',
       });
     }
 
@@ -82,14 +84,14 @@ export async function POST(request: NextRequest) {
       }
 
       // Save image message if provided
-      if (imageUrl) {
+      if (imageDataUrl) {
         const imgId = await nextId('line_messages');
         await db.collection('line_messages').insertOne({
           id: imgId,
           line_user_id: userId,
           display_name: 'Bot',
           message: '[Image]',
-          image_url: imageUrl,
+          image_url: imageDataUrl,
           received_at: new Date().toISOString(),
           used: true,
           type: 'outgoing',
