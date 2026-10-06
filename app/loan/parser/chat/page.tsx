@@ -152,6 +152,9 @@ export default function ChatPage() {
 
       if (res.ok) {
         const data = await res.json();
+        console.log('📥 Response from server:', data);
+        console.log('📥 Messages received:', data.messages?.length);
+
         setReplyText('');
         setSelectedFile(null);
         setPreview(null);
@@ -159,12 +162,19 @@ export default function ChatPage() {
 
         // Update thread with new messages immediately
         if (data.messages && Array.isArray(data.messages)) {
+          console.log('✓ Adding messages to thread. Count:', data.messages.length);
+          data.messages.forEach((msg: any, i: number) => {
+            console.log(`  Message ${i}: type=${msg.type}, hasImage=${!!msg.image_url}, message="${msg.message}"`);
+          });
+
           setThreads(prev => {
             const updated = prev.map(thread => {
               if (thread.userId === selectedUserId) {
+                const newMessages = [...thread.messages, ...data.messages];
+                console.log('✓ Thread updated. Total messages:', newMessages.length);
                 return {
                   ...thread,
-                  messages: [...thread.messages, ...data.messages],
+                  messages: newMessages,
                   lastMessage: data.messages[data.messages.length - 1],
                 };
               }
@@ -172,6 +182,8 @@ export default function ChatPage() {
             });
             return updated;
           });
+        } else {
+          console.warn('⚠️ No messages in response');
         }
       } else {
         alert('ไม่สามารถส่งแชทได้');
