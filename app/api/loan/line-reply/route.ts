@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/loan-db';
+import { getDb, nextId } from '@/lib/loan-db';
 import { getAuthUser } from '@/lib/loan-auth';
 
 export async function POST(request: NextRequest) {
@@ -35,6 +35,24 @@ export async function POST(request: NextRequest) {
       const error = await response.text();
       console.error('LINE API error:', error);
       return NextResponse.json({ error: 'Failed to send message' }, { status: 400 });
+    }
+
+    // Save outgoing message to database
+    try {
+      const db = await getDb();
+      const msgId = await nextId('line_messages');
+      await db.collection('line_messages').insertOne({
+        id: msgId,
+        line_user_id: userId,
+        display_name: 'Bot',
+        message: message,
+        received_at: new Date().toISOString(),
+        used: true,
+        type: 'outgoing', // Mark as outgoing
+      });
+    } catch (dbErr) {
+      console.error('Failed to save outgoing message:', dbErr);
+      // Don't fail the response if DB save fails, message already sent to LINE
     }
 
     return NextResponse.json({ ok: true });

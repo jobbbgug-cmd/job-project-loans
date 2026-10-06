@@ -9,6 +9,7 @@ interface LineMessage {
   message: string;
   received_at: string;
   used: boolean;
+  type?: 'outgoing'; // undefined means incoming (default)
 }
 
 interface UserThread {
@@ -51,6 +52,11 @@ export default function ChatPage() {
           });
         }
         grouped.get(msg.line_user_id)!.messages.push(msg);
+      });
+
+      // Sort messages ascending (oldest first) and threads by last message descending
+      Array.from(grouped.values()).forEach(thread => {
+        thread.messages.sort((a, b) => new Date(a.received_at).getTime() - new Date(b.received_at).getTime());
       });
 
       const sorted = Array.from(grouped.values())
@@ -157,16 +163,25 @@ export default function ChatPage() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto space-y-3 p-4">
-              {selectedThread.messages.map((msg, i) => (
-                <div key={i} className="flex justify-start">
-                  <div className="max-w-xs bg-slate-700 rounded-lg px-4 py-2">
-                    <p className="text-sm text-white break-words">{msg.message}</p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      {new Date(msg.received_at).toLocaleString('th-TH')}
-                    </p>
+              {selectedThread.messages.map((msg, i) => {
+                const isOutgoing = msg.type === 'outgoing';
+                return (
+                  <div key={i} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-xs rounded-lg px-4 py-2 ${
+                      isOutgoing
+                        ? 'bg-yellow-500 text-slate-900'
+                        : 'bg-slate-700 text-white'
+                    }`}>
+                      <p className="text-sm break-words">{msg.message}</p>
+                      <p className={`text-xs mt-1 ${
+                        isOutgoing ? 'text-slate-800' : 'text-slate-400'
+                      }`}>
+                        {new Date(msg.received_at).toLocaleString('th-TH')}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 
