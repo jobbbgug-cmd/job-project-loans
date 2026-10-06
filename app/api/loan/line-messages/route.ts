@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   }
 
   const rows = await db.collection('line_messages')
-    .find(query, { projection: { _id: 0, id: 1, line_user_id: 1, display_name: 1, message: 1, received_at: 1, used: 1, type: 1 } })
+    .find(query, { projection: { _id: 0, id: 1, line_user_id: 1, display_name: 1, message: 1, received_at: 1, used: 1, type: 1, image_url: 1 } })
     .sort({ received_at: -1 })
     .toArray();
   return NextResponse.json(rows);

@@ -7,9 +7,13 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const { userId, message } = await request.json() as { userId: string; message: string };
-  if (!userId || !message) {
-    return NextResponse.json({ error: 'userId and message required' }, { status: 400 });
+  const formData = await request.formData();
+  const userId = formData.get('userId') as string;
+  const message = formData.get('message') as string | null;
+  const file = formData.get('file') as File | null;
+
+  if (!userId || (!message && !file)) {
+    return NextResponse.json({ error: 'userId and (message or file) required' }, { status: 400 });
   }
 
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
@@ -19,6 +23,28 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Prepare messages array
+    const messages: any[] = [];
+
+    // Add text message if provided
+    if (message?.trim()) {
+      messages.push({ type: 'text', text: message });
+    }
+
+    // Handle image upload
+    let imageUrl: string | null = null;
+    if (file) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      // Convert to base64 data URL for storage/LINE
+      imageUrl = `data:${file.type};base64,${buffer.toString('base64')}`;
+      messages.push({
+        type: 'image',
+        originalContentUrl: imageUrl,
+        previewImageUrl: imageUrl,
+      });
+    }
+
+    // Send to LINE
     const response = await fetch('https://api.line.me/v2/bot/message/push', {
       method: 'POST',
       headers: {
@@ -27,7 +53,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         to: userId,
-        messages: [{ type: 'text', text: message }],
+        messages,
       }),
     });
 
@@ -37,22 +63,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to send message' }, { status: 400 });
     }
 
-    // Save outgoing message to database
+    // Save outgoing message(s) to database
     try {
       const db = await getDb();
-      const msgId = await nextId('line_messages');
-      await db.collection('line_messages').insertOne({
-        id: msgId,
-        line_user_id: userId,
-        display_name: 'Bot',
-        message: message,
-        received_at: new Date().toISOString(),
-        used: true,
-        type: 'outgoing', // Mark as outgoing
-      });
+
+      // Save text message if provided
+      if (message?.trim()) {
+        const msgId = await nextId('line_messages');
+        await db.collection('line_messages').insertOne({
+          id: msgId,
+          line_user_id: userId,
+          display_name: 'Bot',
+          message: message,
+          received_at: new Date().toISOString(),
+          used: true,
+          type: 'outgoing',
+        });
+      }
+
+      // Save image message if provided
+      if (imageUrl) {
+        const imgId = await nextId('line_messages');
+        await db.collection('line_messages').insertOne({
+          id: imgId,
+          line_user_id: userId,
+          display_name: 'Bot',
+          message: '[Image]',
+          image_url: imageUrl,
+          received_at: new Date().toISOString(),
+          used: true,
+          type: 'outgoing',
+        });
+      }
     } catch (dbErr) {
       console.error('Failed to save outgoing message:', dbErr);
-      // Don't fail the response if DB save fails, message already sent to LINE
     }
 
     return NextResponse.json({ ok: true });

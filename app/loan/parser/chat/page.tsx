@@ -10,6 +10,7 @@ interface LineMessage {
   received_at: string;
   used: boolean;
   type?: 'outgoing'; // undefined means incoming (default)
+  image_url?: string; // Image message URL
 }
 
 interface UserThread {
@@ -25,7 +26,10 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchMessages();
@@ -73,19 +77,43 @@ export default function ChatPage() {
     }
   }
 
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ไฟล์ต้องไม่เกิน 5MB');
+      return;
+    }
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
   async function sendReply() {
-    if (!selectedUserId || !replyText.trim()) return;
+    if (!selectedUserId || (!replyText.trim() && !selectedFile)) return;
 
     setSending(true);
     try {
+      const formData = new FormData();
+      formData.append('userId', selectedUserId);
+      if (replyText.trim()) formData.append('message', replyText);
+      if (selectedFile) formData.append('file', selectedFile);
+
       const res = await fetch('/api/loan/line-reply', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: selectedUserId, message: replyText }),
+        body: formData,
       });
 
       if (res.ok) {
         setReplyText('');
+        setSelectedFile(null);
+        setPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
         // Refresh messages
         await fetchMessages();
       } else {
@@ -167,17 +195,28 @@ export default function ChatPage() {
                 const isOutgoing = msg.type === 'outgoing';
                 return (
                   <div key={i} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-xs rounded-lg px-4 py-2 ${
+                    <div className={`max-w-xs rounded-lg overflow-hidden ${
                       isOutgoing
                         ? 'bg-yellow-500 text-slate-900'
                         : 'bg-slate-700 text-white'
                     }`}>
-                      <p className="text-sm break-words">{msg.message}</p>
-                      <p className={`text-xs mt-1 ${
+                      {msg.image_url && (
+                        <img src={msg.image_url} alt="chat image" className="w-full rounded-lg" />
+                      )}
+                      {msg.message && (
+                        <div className="px-4 py-2">
+                          <p className="text-sm break-words">{msg.message}</p>
+                        </div>
+                      )}
+                      <div className={`px-4 py-2 ${
+                        msg.message ? 'pt-0' : ''
+                      } ${
                         isOutgoing ? 'text-slate-800' : 'text-slate-400'
                       }`}>
-                        {new Date(msg.received_at).toLocaleString('th-TH')}
-                      </p>
+                        <p className="text-xs">
+                          {new Date(msg.received_at).toLocaleString('th-TH')}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 );
@@ -185,14 +224,49 @@ export default function ChatPage() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Preview */}
+            {preview && (
+              <div className="px-4 py-2 border-t border-slate-700 flex gap-2 items-end">
+                <img src={preview} alt="preview" className="h-20 rounded-lg border border-slate-600" />
+                <button
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setPreview(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                  className="text-slate-400 hover:text-red-400 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
             {/* Input */}
             <div className="px-4 py-3 border-t border-slate-700 flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
+                className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-700 rounded-lg disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
               <input
                 type="text"
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  if (e.key === 'Enter' && !e.shiftKey && !selectedFile) {
                     e.preventDefault();
                     sendReply();
                   }
@@ -203,7 +277,7 @@ export default function ChatPage() {
               />
               <button
                 onClick={sendReply}
-                disabled={sending || !replyText.trim()}
+                disabled={sending || (!replyText.trim() && !selectedFile)}
                 className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 {sending ? 'ส่ง...' : 'ส่ง'}
