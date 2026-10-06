@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
 
   const db = await getDb();
 
-  // Get all khanchit messages (both incoming and outgoing)
+  // Get all khanchit messages that haven't been used yet
   const messages = await db.collection('line_messages')
-    .find({ display_name: 'khanchit' }, {
+    .find({ display_name: 'khanchit', used: { $ne: true } }, {
       projection: { _id: 0, id: 1, message: 1, received_at: 1, type: 1 }
     })
     .sort({ received_at: -1 })
