@@ -84,10 +84,12 @@ export async function POST(request: NextRequest) {
         };
         await db.collection('line_messages').insertOne(textMsg);
         savedMessages.push(textMsg);
+        console.log('✓ Text message saved:', msgId);
       }
 
       // Save image message if provided
       if (imageDataUrl) {
+        console.log('💾 Saving image message. Data URL length:', imageDataUrl.length);
         const imgId = await nextId('line_messages');
         const imgMsg = {
           id: imgId,
@@ -101,11 +103,15 @@ export async function POST(request: NextRequest) {
         };
         await db.collection('line_messages').insertOne(imgMsg);
         savedMessages.push(imgMsg);
+        console.log('✓ Image message saved:', imgId, 'URL length:', imageDataUrl.length);
+      } else {
+        console.log('⚠️ imageDataUrl is null/undefined');
       }
     } catch (dbErr) {
-      console.error('Failed to save outgoing message:', dbErr);
+      console.error('❌ Failed to save outgoing message:', dbErr);
     }
 
+    console.log('📤 Returning messages:', savedMessages.length);
     return NextResponse.json({ ok: true, messages: savedMessages });
   } catch (err) {
     console.error('Error sending LINE message:', err);
