@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation';
 
 const TABS = [
   { label: 'แยกข้อมูล', href: '/loan/parser' },
-  { label: 'แดชบอร์ด', href: '/loan/parser/dashboard' },
   { label: 'แชท', href: '/loan/parser/chat' },
+  { label: 'แดชบอร์ด', href: '/loan/parser/dashboard' },
 ];
 
 export default function ParserLayout({ children }: { children: React.ReactNode }) {
