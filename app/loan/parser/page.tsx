@@ -380,7 +380,7 @@ export default function ParserPage() {
   async function fetchRawMessages() {
     setLoadingRawMessages(true);
     try {
-      const res = await fetch('/api/loan/line-messages?type=raw');
+      const res = await fetch('/api/loan/line-messages-khanchit?type=raw');
       if (res.ok) {
         const allData = await res.json() as LineMessage[];
         const today = new Date();
@@ -403,7 +403,7 @@ export default function ParserPage() {
   async function fetchAmountMessages() {
     setLoadingAmountMessages(true);
     try {
-      const res = await fetch('/api/loan/line-messages?type=amount');
+      const res = await fetch('/api/loan/line-messages-khanchit?type=amount');
       if (res.ok) {
         const allData = await res.json() as LineMessage[];
         const today = new Date();
