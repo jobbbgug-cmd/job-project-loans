@@ -68,7 +68,9 @@ export default function ChatPage() {
 
       setThreads(sorted);
       if (sorted.length > 0 && !selectedUserId) {
-        setSelectedUserId(sorted[0].userId);
+        // Default to khanchit thread if available
+        const khanchitThread = sorted.find(t => t.displayName === 'khanchit');
+        setSelectedUserId(khanchitThread ? khanchitThread.userId : sorted[0].userId);
       }
     } catch (err) {
       console.error('Failed to fetch messages:', err);
