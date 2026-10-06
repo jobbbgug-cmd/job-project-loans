@@ -95,10 +95,15 @@ export default function ChatPage() {
 
   const selectedThread = threads.find(t => t.userId === selectedUserId);
 
+  // Mobile: show full-screen list or conversation; Desktop: side-by-side
+  const showConversation = selectedUserId !== null;
+
   return (
-    <div className="flex gap-4 h-[calc(100vh-200px)]">
-      {/* Thread list */}
-      <div className="w-80 border border-slate-700 rounded-lg overflow-hidden flex flex-col bg-slate-800">
+    <div className="h-[calc(100vh-200px)] flex gap-4">
+      {/* Thread list - hidden on mobile when conversation is selected */}
+      <div className={`${
+        showConversation ? 'hidden md:flex' : 'flex'
+      } w-full md:w-80 border border-slate-700 rounded-lg overflow-hidden flex-col bg-slate-800`}>
         <div className="px-4 py-3 border-b border-slate-700 bg-slate-750">
           <h2 className="text-sm font-semibold text-white">บทสนทนา</h2>
         </div>
@@ -131,12 +136,22 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Chat view */}
-      <div className="flex-1 border border-slate-700 rounded-lg overflow-hidden flex flex-col bg-slate-800">
+      {/* Chat view - full width on mobile when selected, side-by-side on desktop */}
+      <div className={`${
+        selectedUserId === null ? 'hidden md:flex' : 'flex'
+      } flex-1 border border-slate-700 rounded-lg overflow-hidden flex-col bg-slate-800`}>
         {selectedThread ? (
           <>
             {/* Header */}
-            <div className="px-4 py-3 border-b border-slate-700 bg-slate-750">
+            <div className="px-4 py-3 border-b border-slate-700 bg-slate-750 flex items-center gap-3">
+              <button
+                onClick={() => setSelectedUserId(null)}
+                className="md:hidden text-slate-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
               <h3 className="text-sm font-semibold text-white">{selectedThread.displayName}</h3>
             </div>
 
